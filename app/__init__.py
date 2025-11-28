@@ -1,7 +1,8 @@
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from config import config
-from .db_connection import init_app as init_db_connection # Import the init_app function from db_connection
+from .db_connection import init_app as init_db_connection, get_db # Import get_db
+from utils.seed_data import seed_data # Import seed_data
 
 # db = SQLAlchemy() # Remove SQLAlchemy instance
 jwt = JWTManager()
@@ -25,5 +26,13 @@ def create_app(config_name='default'):
     
     from .admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint, url_prefix='/admin')
+
+    # Register CLI command for database initialization
+    @app.cli.command('init-db')
+    def init_db_command():
+        """Clear existing data and create new tables."""
+        with app.app_context():
+            seed_data()
+            print('Initialized the database.')
 
     return app
