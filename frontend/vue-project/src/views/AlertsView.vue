@@ -40,7 +40,11 @@
           </thead>
           <tbody>
             <tr v-for="alert in paginatedAlerts" :key="alert.id">
-              <td>{{ alert.student_name }}</td>
+              <td>
+                <router-link :to="{ name: 'student-detail', params: { id: alert.student_id } }" class="student-link">
+                  {{ alert.student_name }}
+                </router-link>
+              </td>
               <td>{{ alert.module_title }}</td>
               <td>{{ alert.week_number }}</td>
               <td>{{ alert.reason }}</td>
@@ -91,9 +95,31 @@ const sortOrder = ref<'asc' | 'desc'>('desc') // Default to newest first
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
+// Computed property to ensure only the most recent alert per student is displayed
+const uniqueRecentAlerts = computed(() => {
+  const latestAlertsMap = new Map<number, Alert>(); // Map student_id to their latest alert
+
+  // Sort all alerts by week_number descending, then created_at descending for tie-breaking
+  const sortedAlerts = [...allAlerts.value].sort((a, b) => {
+    if (a.week_number !== b.week_number) {
+      return (b.week_number || 0) - (a.week_number || 0); // Sort by week_number descending
+    }
+    // For alerts in the same week, sort by created_at descending
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  for (const alert of sortedAlerts) {
+    if (alert.student_id !== undefined && !latestAlertsMap.has(alert.student_id)) {
+      latestAlertsMap.set(alert.student_id, alert);
+    }
+  }
+  return Array.from(latestAlertsMap.values());
+});
+
+
 // Computed properties for interactivity
 const filteredAndSortedAlerts = computed(() => {
-  let alerts = [...allAlerts.value]
+  let alerts = [...uniqueRecentAlerts.value] // Use uniqueRecentAlerts as the source
 
   // Filter by search query
   if (searchQuery.value) {
@@ -147,7 +173,7 @@ const paginatedAlerts = computed(() => {
 // Methods
 const fetchAlerts = async () => {
   try {
-    const response = await getAlerts()
+    const response = await getAlerts() // This now fetches all alerts (backend was changed back to get_all_alerts for this endpoint)
     allAlerts.value = response.data
   } catch (error: any) {
     console.error('Failed to fetch alerts:', error)
@@ -292,6 +318,18 @@ tbody tr {
 
 tbody tr:last-child {
   border-bottom: none;
+}
+
+.student-link {
+  color: #3498db; /* A distinct, classic link blue */
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.student-link:hover {
+  text-decoration: underline;
+  color: var(--vt-c-indigo); /* On hover, use the main theme color */
 }
 
 .action-buttons {

@@ -1,5 +1,6 @@
 import apiClient from './index';
 
+// Define the interface for a Student
 export interface Student {
   id?: number;
   student_number: string;
@@ -7,13 +8,20 @@ export interface Student {
   email: string;
   course_name?: string;
   year_of_study?: number;
+  is_active?: boolean;
+  enrolments?: string[]; // Assuming enrolments are just module titles for display
 }
 
+// API service functions
 export const getStudents = () => {
   return apiClient.get<Student[]>('/analysis/students');
 };
 
-export const addStudent = (student: Omit<Student, 'id'>) => {
+export const getStudentById = (id: number) => {
+  return apiClient.get<Student>(`/analysis/students/${id}`);
+};
+
+export const addStudent = (student: Omit<Student, 'id' | 'enrolments'>) => {
   return apiClient.post('/admin/students', student);
 };
 

@@ -74,7 +74,14 @@ def delete_module(module_id):
 @jwt_required()
 @role_required(['admin', 'wellbeing_officer'])
 def get_alerts():
-    alerts_data = AlertRepository.get_all_alerts()
+    alerts_data = AlertRepository.get_recent_alerts_per_student() # Modified to get recent alerts
+    return jsonify(alerts_data)
+
+@admin.route('/alerts/student/<int:student_id>', methods=['GET'])
+@jwt_required()
+@role_required(['admin', 'wellbeing_officer', 'course_director']) # Allow course_director to view student alerts
+def get_alerts_for_student(student_id):
+    alerts_data = AlertRepository.get_alerts_by_student_id(student_id)
     return jsonify(alerts_data)
 
 @admin.route('/alerts/<int:alert_id>/resolve', methods=['PUT'])
@@ -159,7 +166,6 @@ def get_user(user_id):
 @role_required('admin')
 def create_user():
     data = request.get_json()
-    # Provide a default role if not specified by the client
     role = data.get('role', 'user')
     user = UserRepository.create_user(
         data.get('username'),

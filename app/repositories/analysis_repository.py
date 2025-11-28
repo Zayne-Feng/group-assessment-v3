@@ -13,28 +13,32 @@ class AnalysisRepository:
     def get_stress_trend_for_student(student_id):
         db = get_db()
         cursor = db.execute("""
-            SELECT week_number, stress_level FROM survey_responses
-            WHERE student_id = ? AND is_active = 1 ORDER BY week_number
+            SELECT week_number, AVG(stress_level) as average_stress_level FROM survey_responses
+            WHERE student_id = ? AND is_active = 1
+            GROUP BY week_number
+            ORDER BY week_number
         """, (student_id,))
         records = cursor.fetchall()
         
         return {
             'labels': [f"Week {row['week_number']}" for row in records],
-            'data': [row['stress_level'] for row in records]
+            'data': [round(row['average_stress_level'], 2) for row in records]
         }
 
     @staticmethod
     def get_attendance_trend_for_student(student_id):
         db = get_db()
         cursor = db.execute("""
-            SELECT week_number, attendance_rate FROM attendance_records
-            WHERE student_id = ? AND is_active = 1 ORDER BY week_number
+            SELECT week_number, AVG(attendance_rate) as average_attendance_rate FROM attendance_records
+            WHERE student_id = ? AND is_active = 1
+            GROUP BY week_number
+            ORDER BY week_number
         """, (student_id,))
         records = cursor.fetchall()
         
         return {
             'labels': [f"Week {row['week_number']}" for row in records],
-            'data': [row['attendance_rate'] * 100 if row['attendance_rate'] is not None else 0 for row in records]
+            'data': [round(row['average_attendance_rate'] * 100, 2) if row['average_attendance_rate'] is not None else 0 for row in records]
         }
 
     @staticmethod

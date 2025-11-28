@@ -19,6 +19,10 @@ export const getAlerts = () => {
   return apiClient.get<Alert[]>('/admin/alerts');
 };
 
+export const getAlertsByStudentId = (studentId: number) => {
+  return apiClient.get<Alert[]>(`/admin/alerts/student/${studentId}`);
+};
+
 export const addAlert = (alert: Omit<Alert, 'id' | 'student_name' | 'module_title' | 'created_at' | 'resolved' | 'is_active'>) => {
   return apiClient.post('/admin/alerts', alert);
 };
