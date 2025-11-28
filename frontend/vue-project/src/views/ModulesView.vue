@@ -50,16 +50,41 @@
       <button @click="nextPage" :disabled="currentPage >= totalPages" class="btn-secondary">Next</button>
     </div>
 
-    <!-- Modal logic remains similar, but needs to be adapted -->
+    <!-- Module Add/Edit Modal -->
+    <div v-if="showModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>{{ isEditMode ? 'Edit Module' : 'Add New Module' }}</h3>
+        <form @submit.prevent="handleSaveModule">
+          <div class="form-group">
+            <label for="module_code">Module Code:</label>
+            <input type="text" id="module_code" v-model="currentModule.module_code" required />
+          </div>
+          <div class="form-group">
+            <label for="module_title">Module Title:</label>
+            <input type="text" id="module_title" v-model="currentModule.module_title" required />
+          </div>
+          <div class="form-group">
+            <label for="credit">Credit:</label>
+            <input type="number" id="credit" v-model="currentModule.credit" required />
+          </div>
+          <div class="form-group">
+            <label for="academic_year">Academic Year:</label>
+            <input type="text" id="academic_year" v-model="currentModule.academic_year" />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" @click="showModal = false" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getModules, type Module } from '@/api/moduleService'
-// Assume add/update/delete services exist in moduleService
-// import { addModule, updateModule, deleteModule } from '@/api/moduleService'
+import { getModules, addModule, updateModule, deleteModule, type Module } from '@/api/moduleService'
 
 const authStore = useAuthStore()
 
@@ -147,13 +172,66 @@ const prevPage = () => {
 
 onMounted(fetchModules)
 
-// Modal logic (placeholder, needs full implementation)
+// Modal logic
 const showModal = ref(false)
 const isEditMode = ref(false)
-const currentModule = ref<Partial<Module>>({})
-const openAddModal = () => { /* ... */ }
-const openEditModal = (module: Module) => { /* ... */ }
-const handleDeleteModule = async (id: number) => { /* ... */ }
+const currentModule = ref<Module>({ module_code: '', module_title: '', credit: 0, academic_year: '' })
+
+const openAddModal = () => {
+  console.log('openAddModal called'); // Added for debugging
+  isEditMode.value = false;
+  currentModule.value = { module_code: '', module_title: '', credit: 0, academic_year: '' }; // Reset for new module
+  showModal.value = true;
+};
+
+const openEditModal = (module: Module) => {
+  isEditMode.value = true;
+  currentModule.value = { ...module }; // Copy module data for editing
+  showModal.value = true;
+};
+
+const handleSaveModule = async () => {
+  try {
+    if (isEditMode.value) {
+      if (currentModule.value.id) {
+        await updateModule(currentModule.value.id, currentModule.value);
+        showMessage('Module updated successfully!', 'success');
+      } else {
+        showMessage('Error: Module ID is missing for update.', 'error');
+      }
+    } else {
+      await addModule(currentModule.value);
+      showMessage('Module added successfully!', 'success');
+    }
+    showModal.value = false;
+    await fetchModules(); // Refresh the list
+  } catch (error: any) {
+    console.error('Failed to save module:', error);
+    showMessage('Failed to save module.', 'error');
+  }
+};
+
+const handleDeleteModule = async (id: number) => {
+  if (confirm('Are you sure you want to delete this module?')) {
+    try {
+      await deleteModule(id);
+      showMessage('Module deleted successfully!', 'success');
+      await fetchModules(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to delete module:', error);
+      showMessage('Failed to delete module.', 'error');
+    }
+  }
+};
+
+const showMessage = (msg: string, type: 'success' | 'error') => {
+  message.value = msg;
+  messageType.value = type;
+  setTimeout(() => {
+    message.value = '';
+    messageType.value = '';
+  }, 3000);
+};
 </script>
 
 <style scoped>
@@ -284,5 +362,118 @@ tbody tr:last-child {
 .pagination-controls button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--color-background);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: var(--color-heading);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="number"] {
+  width: calc(100% - 20px); /* Adjust for padding */
+  padding: 0.75rem 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-background-soft);
+  color: var(--color-text);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--vt-c-indigo);
+  box-shadow: 0 0 0 3px rgba(var(--vt-c-indigo-rgb), 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--vt-c-indigo-dark);
+  border-color: var(--vt-c-indigo-dark);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-danger:hover {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.message-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: white;
+  z-index: 1001;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.message-success {
+  background-color: #28a745;
+}
+
+.message-error {
+  background-color: #dc3545;
 }
 </style>

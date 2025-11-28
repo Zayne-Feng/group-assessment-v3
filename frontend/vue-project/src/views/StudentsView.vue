@@ -61,11 +61,42 @@
     </div>
 
     <!-- Modal logic remains unchanged -->
+    <!-- Student Add/Edit Modal -->
+    <div v-if="showModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>{{ isEditMode ? 'Edit Student' : 'Add New Student' }}</h3>
+        <form @submit.prevent="handleSaveStudent">
+          <div class="form-group">
+            <label for="student_number">Student Number:</label>
+            <input type="text" id="student_number" v-model="currentStudent.student_number" required />
+          </div>
+          <div class="form-group">
+            <label for="full_name">Full Name:</label>
+            <input type="text" id="full_name" v-model="currentStudent.full_name" required />
+          </div>
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" v-model="currentStudent.email" required />
+          </div>
+          <div class="form-group">
+            <label for="course_name">Course:</label>
+            <input type="text" id="course_name" v-model="currentStudent.course_name" />
+          </div>
+          <div class="form-group">
+            <label for="year_of_study">Year of Study:</label>
+            <input type="number" id="year_of_study" v-model="currentStudent.year_of_study" />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" @click="showModal = false" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Script content remains the same
 import { ref, onMounted, computed } from 'vue'
 import { getStudents, addStudent, updateStudent, deleteStudent, type Student } from '@/api/studentService'
 
@@ -149,13 +180,66 @@ const prevPage = () => {
 
 onMounted(fetchStudents)
 
-// Modal logic (omitted for brevity)
+// Modal logic
 const showModal = ref(false)
 const isEditMode = ref(false)
-const currentStudent = ref<Student>({ student_number: '', full_name: '', email: '' })
-const openAddModal = () => { /* ... */ }
-const openEditModal = (student: Student) => { /* ... */ }
-const handleDeleteStudent = async (id: number) => { /* ... */ }
+const currentStudent = ref<Student>({ student_number: '', full_name: '', email: '', course_name: '', year_of_study: undefined })
+
+const openAddModal = () => {
+  console.log('openAddModal called'); // Added for debugging
+  isEditMode.value = false;
+  currentStudent.value = { student_number: '', full_name: '', email: '', course_name: '', year_of_study: undefined }; // Reset for new student
+  showModal.value = true;
+};
+
+const openEditModal = (student: Student) => {
+  isEditMode.value = true;
+  currentStudent.value = { ...student }; // Copy student data for editing
+  showModal.value = true;
+};
+
+const handleSaveStudent = async () => {
+  try {
+    if (isEditMode.value) {
+      if (currentStudent.value.id) {
+        await updateStudent(currentStudent.value.id, currentStudent.value);
+        showMessage('Student updated successfully!', 'success');
+      } else {
+        showMessage('Error: Student ID is missing for update.', 'error');
+      }
+    } else {
+      await addStudent(currentStudent.value);
+      showMessage('Student added successfully!', 'success');
+    }
+    showModal.value = false;
+    await fetchStudents(); // Refresh the list
+  } catch (error: any) {
+    console.error('Failed to save student:', error);
+    showMessage('Failed to save student.', 'error');
+  }
+};
+
+const handleDeleteStudent = async (id: number) => {
+  if (confirm('Are you sure you want to delete this student?')) {
+    try {
+      await deleteStudent(id);
+      showMessage('Student deleted successfully!', 'success');
+      await fetchStudents(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to delete student:', error);
+      showMessage('Failed to delete student.', 'error');
+    }
+  }
+};
+
+const showMessage = (msg: string, type: 'success' | 'error') => {
+  message.value = msg;
+  messageType.value = type;
+  setTimeout(() => {
+    message.value = '';
+    messageType.value = '';
+  }, 3000);
+};
 </script>
 
 <style scoped>
@@ -297,5 +381,118 @@ tbody tr:last-child {
 .pagination-controls button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--color-background);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: var(--color-heading);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="number"] {
+  width: calc(100% - 20px); /* Adjust for padding */
+  padding: 0.75rem 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-background-soft);
+  color: var(--color-text);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--vt-c-indigo);
+  box-shadow: 0 0 0 3px rgba(var(--vt-c-indigo-rgb), 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--vt-c-indigo-dark);
+  border-color: var(--vt-c-indigo-dark);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-background-mute);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-danger:hover {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.message-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 5px;
+  color: white;
+  z-index: 1001;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.message-success {
+  background-color: #28a745;
+}
+
+.message-error {
+  background-color: #dc3545;
 }
 </style>
