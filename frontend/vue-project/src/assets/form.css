@@ -1,0 +1,94 @@
+.form-container {
+  max-width: 450px; /* Increased max-width for desktop */
+  margin: 2rem auto;
+  padding: 2.5rem; /* Increased padding */
+  border-radius: 10px; /* Slightly more rounded corners */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+  background-color: var(--color-background-soft);
+}
+
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 2rem; /* Increased margin */
+  color: var(--color-heading);
+  font-size: 2rem; /* Larger heading */
+}
+
+.form-group {
+  margin-bottom: 1.25rem; /* Increased margin */
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem; /* Increased margin */
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 1.1rem; /* Larger label font */
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.9rem; /* Increased padding */
+  border: 1px solid var(--color-border);
+  border-radius: 6px; /* Slightly more rounded corners */
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-size: 1.05rem; /* Slightly larger font */
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--vt-c-indigo); /* Use primary color for focus */
+  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.3); /* Stronger focus shadow */
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 1rem; /* Increased padding */
+  border: none;
+  border-radius: 6px; /* Slightly more rounded corners */
+  background-color: var(--vt-c-indigo);
+  color: white;
+  font-size: 1.1rem; /* Larger font */
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: var(--vt-c-indigo-light); /* Darker on hover */
+}
+
+.message {
+  text-align: center;
+  margin-top: 1.5rem; /* Increased margin */
+  padding: 0.9rem; /* Increased padding */
+  border-radius: 6px; /* Slightly more rounded corners */
+  font-size: 1rem;
+}
+
+.message.success {
+  background-color: rgba(16, 185, 129, 0.15); /* Slightly stronger background */
+  color: #047857;
+}
+
+.message.error {
+  background-color: rgba(239, 68, 68, 0.15); /* Slightly stronger background */
+  color: #b91c1c;
+}
+
+.switch-form {
+  text-align: center;
+  margin-top: 2rem; /* Increased margin */
+  font-size: 1rem;
+}
+
+.switch-form a {
+  color: var(--vt-c-indigo);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.switch-form a:hover {
+  text-decoration: underline;
+}
