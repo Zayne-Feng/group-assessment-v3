@@ -53,7 +53,7 @@ class StudentRepository:
             "INSERT INTO students (student_number, full_name, email, course_name, year_of_study, is_active) VALUES (?, ?, ?, ?, ?, 1)",
             (student_number, full_name, email, course_name, year_of_study)
         )
-        # No commit here, it will be handled by the service layer
+        db.commit() # Commit the transaction
         return Student(id=cursor.lastrowid, student_number=student_number, full_name=full_name, email=email, course_name=course_name, year_of_study=year_of_study)
 
     @staticmethod
@@ -78,5 +78,5 @@ class StudentRepository:
         """ A hard delete for rolling back a transaction. """
         db = get_db()
         db.execute("DELETE FROM students WHERE id = ?", (student_id,))
-        # No commit here, it will be handled by the service layer
+        db.commit() # This should also be committed if called independently
         return True
