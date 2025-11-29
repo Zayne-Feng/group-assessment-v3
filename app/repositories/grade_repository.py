@@ -15,10 +15,10 @@ class GradeRepository:
         """)
         grades = []
         for row in cursor.fetchall():
-            grade_dict = Grade.from_row(row).to_dict()
-            grade_dict['student_name'] = row['student_name']
-            grade_dict['module_title'] = row['module_title']
-            grades.append(grade_dict)
+            grade = Grade.from_row(row)
+            grade.student_name = row['student_name']
+            grade.module_title = row['module_title']
+            grades.append(grade)
         return grades
 
     @staticmethod

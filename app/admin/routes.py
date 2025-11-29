@@ -20,6 +20,16 @@ def get_modules():
     modules = ModuleRepository.get_all_modules()
     return jsonify([module.to_dict() for module in modules])
 
+@admin.route('/modules', methods=['POST'])
+@jwt_required()
+@role_required('admin')
+def create_module():
+    data = request.get_json()
+    module = ModuleRepository.create_module(data.get('module_code'), data.get('module_title'), data.get('credit'), data.get('academic_year'))
+    if module:
+        return jsonify({'message': 'Module created successfully', 'id': module.id}), 201
+    return jsonify({'message': 'Failed to create module'}), 400
+
 @admin.route('/modules/<int:module_id>', methods=['GET'])
 @jwt_required()
 @role_required(['admin', 'course_director'])
@@ -29,33 +39,12 @@ def get_module(module_id):
         return jsonify(module.to_dict())
     return jsonify({'message': 'Module not found'}), 404
 
-@admin.route('/modules', methods=['POST'])
-@jwt_required()
-@role_required('admin')
-def create_module():
-    data = request.get_json()
-    module = ModuleRepository.create_module(
-        data.get('module_code'),
-        data.get('module_title'),
-        data.get('credit'),
-        data.get('academic_year')
-    )
-    if module:
-        return jsonify({'message': 'Module created successfully', 'id': module.id}), 201
-    return jsonify({'message': 'Failed to create module'}), 400
-
 @admin.route('/modules/<int:module_id>', methods=['PUT'])
 @jwt_required()
 @role_required('admin')
 def update_module(module_id):
     data = request.get_json()
-    module = ModuleRepository.update_module(
-        module_id,
-        data.get('module_code'),
-        data.get('module_title'),
-        data.get('credit'),
-        data.get('academic_year')
-    )
+    module = ModuleRepository.update_module(module_id, data.get('module_code'), data.get('module_title'), data.get('credit'), data.get('academic_year'))
     if module:
         return jsonify({'message': 'Module updated successfully'}), 200
     return jsonify({'message': 'Module not found or failed to update'}), 404
@@ -74,12 +63,12 @@ def delete_module(module_id):
 @jwt_required()
 @role_required(['admin', 'wellbeing_officer'])
 def get_alerts():
-    alerts_data = AlertRepository.get_recent_alerts_per_student() # Modified to get recent alerts
+    alerts_data = AlertRepository.get_recent_alerts_per_student()
     return jsonify(alerts_data)
 
 @admin.route('/alerts/student/<int:student_id>', methods=['GET'])
 @jwt_required()
-@role_required(['admin', 'wellbeing_officer', 'course_director']) # Allow course_director to view student alerts
+@role_required(['admin', 'wellbeing_officer', 'course_director'])
 def get_alerts_for_student(student_id):
     alerts_data = AlertRepository.get_alerts_by_student_id(student_id)
     return jsonify(alerts_data)
@@ -102,18 +91,19 @@ def delete_alert_logical(alert_id):
 # endregion
 
 # region Student Endpoints
+@admin.route('/students', methods=['GET'])
+@jwt_required()
+@role_required(['admin', 'course_director', 'wellbeing_officer'])
+def get_students():
+    students = StudentRepository.get_all_students()
+    return jsonify([s.to_dict() for s in students])
+
 @admin.route('/students', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def create_student():
     data = request.get_json()
-    student = StudentRepository.create_student(
-        data.get('student_number'),
-        data.get('full_name'),
-        data.get('email'),
-        data.get('course_name'),
-        data.get('year_of_study')
-    )
+    student = StudentRepository.create_student(data.get('student_number'), data.get('full_name'), data.get('email'), data.get('course_name'), data.get('year_of_study'))
     if student:
         return jsonify({'message': 'Student created successfully', 'id': student.id}), 201
     return jsonify({'message': 'Failed to create student'}), 400
@@ -123,14 +113,7 @@ def create_student():
 @role_required('admin')
 def update_student(student_id):
     data = request.get_json()
-    student = StudentRepository.update_student(
-        student_id,
-        data.get('student_number'),
-        data.get('full_name'),
-        data.get('email'),
-        data.get('course_name'),
-        data.get('year_of_study')
-    )
+    student = StudentRepository.update_student(student_id, data.get('student_number'), data.get('full_name'), data.get('email'), data.get('course_name'), data.get('year_of_study'))
     if student:
         return jsonify({'message': 'Student updated successfully'}), 200
     return jsonify({'message': 'Student not found or failed to update'}), 404
@@ -152,6 +135,16 @@ def get_users():
     users = UserRepository.get_all_users()
     return jsonify([user.to_dict() for user in users])
 
+@admin.route('/users', methods=['POST'])
+@jwt_required()
+@role_required('admin')
+def create_user():
+    data = request.get_json()
+    user = UserRepository.create_user(data.get('username'), data.get('password'), data.get('role'))
+    if user:
+        return jsonify({'message': 'User created successfully', 'id': user.id}), 201
+    return jsonify({'message': 'Failed to create user'}), 400
+
 @admin.route('/users/<int:user_id>', methods=['GET'])
 @jwt_required()
 @role_required('admin')
@@ -161,35 +154,23 @@ def get_user(user_id):
         return jsonify(user.to_dict())
     return jsonify({'message': 'User not found'}), 404
 
-@admin.route('/users', methods=['POST'])
-@jwt_required()
-@role_required('admin')
-def create_user():
-    data = request.get_json()
-    role = data.get('role', 'user')
-    user = UserRepository.create_user(
-        data.get('username'),
-        data.get('password'),
-        role
-    )
-    if user:
-        return jsonify({'message': 'User created successfully', 'id': user.id}), 201
-    return jsonify({'message': 'Failed to create user'}), 400
-
 @admin.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
 @role_required('admin')
 def update_user(user_id):
     data = request.get_json()
-    user = UserRepository.update_user(
-        user_id,
-        data.get('username'),
-        data.get('role'),
-        data.get('is_active')
-    )
+    user = UserRepository.update_user(user_id, data.get('username'), data.get('role'), data.get('is_active'))
     if user:
         return jsonify({'message': 'User updated successfully'}), 200
     return jsonify({'message': 'User not found or failed to update'}), 404
+
+@admin.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@role_required('admin')
+def delete_user(user_id):
+    if UserRepository.delete_user(user_id):
+        return jsonify({'message': 'User deleted successfully'}), 200
+    return jsonify({'message': 'User not found or failed to delete'}), 404
 
 @admin.route('/users/<int:user_id>/reset-password', methods=['PUT'])
 @jwt_required()
@@ -202,34 +183,9 @@ def reset_user_password(user_id):
     if UserRepository.reset_password(user_id, new_password):
         return jsonify({'message': 'User password reset successfully'}), 200
     return jsonify({'message': 'User not found or failed to reset password'}), 404
-
-@admin.route('/users/<int:user_id>', methods=['DELETE'])
-@jwt_required()
-@role_required('admin')
-def delete_user(user_id):
-    if UserRepository.delete_user(user_id):
-        return jsonify({'message': 'User deleted successfully'}), 200
-    return jsonify({'message': 'User not found or failed to delete'}), 404
 # endregion
 
 # region Survey Response Endpoints
-@admin.route('/survey-responses', methods=['POST'])
-@jwt_required()
-@role_required(['admin', 'wellbeing_officer', 'user'])
-def create_survey_response():
-    data = request.get_json()
-    survey = SurveyResponseRepository.create_survey_response(
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('week_number'),
-        data.get('stress_level'),
-        data.get('hours_slept'),
-        data.get('mood_comment')
-    )
-    if survey:
-        return jsonify({'message': 'Survey response created successfully', 'id': survey.id}), 201
-    return jsonify({'message': 'Failed to create survey response'}), 400
-
 @admin.route('/survey-responses', methods=['GET'])
 @jwt_required()
 @role_required(['admin', 'wellbeing_officer'])
@@ -237,20 +193,22 @@ def get_survey_responses():
     surveys = SurveyResponseRepository.get_all_survey_responses()
     return jsonify(surveys)
 
+@admin.route('/survey-responses', methods=['POST'])
+@jwt_required()
+@role_required(['admin', 'wellbeing_officer', 'user', 'student'])
+def create_survey_response():
+    data = request.get_json()
+    survey = SurveyResponseRepository.create_survey_response(data.get('student_id'), data.get('module_id'), data.get('week_number'), data.get('stress_level'), data.get('hours_slept'), data.get('mood_comment'))
+    if survey:
+        return jsonify({'message': 'Survey response created successfully', 'id': survey.id}), 201
+    return jsonify({'message': 'Failed to create survey response'}), 400
+
 @admin.route('/survey-responses/<int:response_id>', methods=['PUT'])
 @jwt_required()
 @role_required(['admin', 'wellbeing_officer'])
 def update_survey_response(response_id):
     data = request.get_json()
-    survey = SurveyResponseRepository.update_survey_response(
-        response_id,
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('week_number'),
-        data.get('stress_level'),
-        data.get('hours_slept'),
-        data.get('mood_comment')
-    )
+    survey = SurveyResponseRepository.update_survey_response(response_id, data.get('student_id'), data.get('module_id'), data.get('week_number'), data.get('stress_level'), data.get('hours_slept'), data.get('mood_comment'))
     if survey:
         return jsonify({'message': 'Survey response updated successfully'}), 200
     return jsonify({'message': 'Survey response not found or failed to update'}), 404
@@ -270,29 +228,14 @@ def delete_survey_response(response_id):
 @role_required(['admin', 'course_director'])
 def get_enrolments():
     enrolments_data = EnrolmentRepository.get_all_enrolments()
-    result = [
-        {
-            'id': e.id,
-            'student_id': e.student_id,
-            'module_id': e.module_id,
-            'enrol_date': e.enrol_date,
-            'student_name': e.student_name,
-            'module_title': e.module_title
-        }
-        for e in enrolments_data
-    ]
-    return jsonify(result)
+    return jsonify([e.to_dict() for e in enrolments_data])
 
 @admin.route('/enrolments', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def create_enrolment():
     data = request.get_json()
-    enrolment = EnrolmentRepository.create_enrolment(
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('enrol_date')
-    )
+    enrolment = EnrolmentRepository.create_enrolment(data.get('student_id'), data.get('module_id'), data.get('enrol_date'))
     if enrolment:
         return jsonify({'message': 'Enrolment created successfully', 'id': enrolment.id}), 201
     return jsonify({'message': 'Failed to create enrolment'}), 400
@@ -302,12 +245,7 @@ def create_enrolment():
 @role_required('admin')
 def update_enrolment(enrolment_id):
     data = request.get_json()
-    enrolment = EnrolmentRepository.update_enrolment(
-        enrolment_id,
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('enrol_date')
-    )
+    enrolment = EnrolmentRepository.update_enrolment(enrolment_id, data.get('student_id'), data.get('module_id'), data.get('enrol_date'))
     if enrolment:
         return jsonify({'message': 'Enrolment updated successfully'}), 200
     return jsonify({'message': 'Enrolment not found or failed to update'}), 404
@@ -327,34 +265,14 @@ def delete_enrolment(enrolment_id):
 @role_required(['admin', 'course_director'])
 def get_attendance_records():
     records_data = AttendanceRecordRepository.get_all_attendance_records()
-    result = [
-        {
-            'id': r.id,
-            'student_id': r.student_id,
-            'module_id': r.module_id,
-            'week_number': r.week_number,
-            'attended_sessions': r.attended_sessions,
-            'total_sessions': r.total_sessions,
-            'attendance_rate': r.attendance_rate,
-            'student_name': r.student_name,
-            'module_title': r.module_title
-        }
-        for r in records_data
-    ]
-    return jsonify(result)
+    return jsonify([r.to_dict() for r in records_data])
 
 @admin.route('/attendance-records', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def create_attendance_record():
     data = request.get_json()
-    record = AttendanceRecordRepository.create_attendance_record(
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('week_number'),
-        data.get('attended_sessions'),
-        data.get('total_sessions')
-    )
+    record = AttendanceRecordRepository.create_attendance_record(data.get('student_id'), data.get('module_id'), data.get('week_number'), data.get('attended_sessions'), data.get('total_sessions'))
     if record:
         return jsonify({'message': 'Attendance record created successfully', 'id': record.id}), 201
     return jsonify({'message': 'Failed to create attendance record'}), 400
@@ -364,14 +282,7 @@ def create_attendance_record():
 @role_required('admin')
 def update_attendance_record(record_id):
     data = request.get_json()
-    record = AttendanceRecordRepository.update_attendance_record(
-        record_id,
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('week_number'),
-        data.get('attended_sessions'),
-        data.get('total_sessions')
-    )
+    record = AttendanceRecordRepository.update_attendance_record(record_id, data.get('student_id'), data.get('module_id'), data.get('week_number'), data.get('attended_sessions'), data.get('total_sessions'))
     if record:
         return jsonify({'message': 'Attendance record updated successfully'}), 200
     return jsonify({'message': 'Attendance record not found or failed to update'}), 404
@@ -391,37 +302,14 @@ def delete_attendance_record(record_id):
 @role_required(['admin', 'course_director'])
 def get_submission_records():
     records_data = SubmissionRecordRepository.get_all_submission_records()
-    result = [
-        {
-            'id': r.id,
-            'student_id': r.student_id,
-            'module_id': r.module_id,
-            'assessment_name': r.assessment_name,
-            'due_date': r.due_date,
-            'submitted_date': r.submitted_date,
-            'is_submitted': r.is_submitted,
-            'is_late': r.is_late,
-            'student_name': r.student_name,
-            'module_title': r.module_title
-        }
-        for r in records_data
-    ]
-    return jsonify(result)
+    return jsonify([r.to_dict() for r in records_data])
 
 @admin.route('/submission-records', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def create_submission_record():
     data = request.get_json()
-    record = SubmissionRecordRepository.create_submission_record(
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('assessment_name'),
-        data.get('due_date'),
-        data.get('submitted_date'),
-        data.get('is_submitted'),
-        data.get('is_late')
-    )
+    record = SubmissionRecordRepository.create_submission_record(data.get('student_id'), data.get('module_id'), data.get('assessment_name'), data.get('due_date'), data.get('submitted_date'), data.get('is_submitted'), data.get('is_late'))
     if record:
         return jsonify({'message': 'Submission record created successfully', 'id': record.id}), 201
     return jsonify({'message': 'Failed to create submission record'}), 400
@@ -431,16 +319,7 @@ def create_submission_record():
 @role_required('admin')
 def update_submission_record(record_id):
     data = request.get_json()
-    record = SubmissionRecordRepository.update_submission_record(
-        record_id,
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('assessment_name'),
-        data.get('due_date'),
-        data.get('submitted_date'),
-        data.get('is_submitted'),
-        data.get('is_late')
-    )
+    record = SubmissionRecordRepository.update_submission_record(record_id, data.get('student_id'), data.get('module_id'), data.get('assessment_name'), data.get('due_date'), data.get('submitted_date'), data.get('is_submitted'), data.get('is_late'))
     if record:
         return jsonify({'message': 'Submission record updated successfully'}), 200
     return jsonify({'message': 'Submission record not found or failed to update'}), 404
@@ -460,19 +339,14 @@ def delete_submission_record(record_id):
 @role_required(['admin', 'course_director'])
 def get_grades():
     grades_data = GradeRepository.get_all_grades()
-    return jsonify(grades_data)
+    return jsonify([g.to_dict() for g in grades_data])
 
 @admin.route('/grades', methods=['POST'])
 @jwt_required()
 @role_required('admin')
 def create_grade():
     data = request.get_json()
-    grade = GradeRepository.create_grade(
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('assessment_name'),
-        data.get('grade')
-    )
+    grade = GradeRepository.create_grade(data.get('student_id'), data.get('module_id'), data.get('assessment_name'), data.get('grade'))
     if grade:
         return jsonify({'message': 'Grade created successfully', 'id': grade.id}), 201
     return jsonify({'message': 'Failed to create grade'}), 400
@@ -482,13 +356,7 @@ def create_grade():
 @role_required('admin')
 def update_grade(grade_id):
     data = request.get_json()
-    grade = GradeRepository.update_grade(
-        grade_id,
-        data.get('student_id'),
-        data.get('module_id'),
-        data.get('assessment_name'),
-        data.get('grade')
-    )
+    grade = GradeRepository.update_grade(grade_id, data.get('student_id'), data.get('module_id'), data.get('assessment_name'), data.get('grade'))
     if grade:
         return jsonify({'message': 'Grade updated successfully'}), 200
     return jsonify({'message': 'Grade not found or failed to update'}), 404

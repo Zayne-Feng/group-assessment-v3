@@ -62,7 +62,7 @@ const handleLogin = async () => {
     authStore.setUserRole(response.data.user_role)
 
     setTimeout(() => {
-      window.location.href = '/dashboard'
+      window.location.href = '/survey' // Redirect students to the survey page
     }, 100);
 
   } catch (error: any) {

@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import StudentLoginView from '../views/StudentLoginView.vue'
 import StudentRegisterView from '../views/StudentRegisterView.vue'
+import MyProfileView from '../views/MyProfileView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import StudentDetailView from '../views/StudentDetailView.vue'
 import DashboardView from '../views/DashboardView.vue'
@@ -44,6 +45,12 @@ const router = createRouter({
       name: 'student-register',
       component: StudentRegisterView,
       meta: { title: 'Student Register' }
+    },
+    {
+      path: '/my-profile',
+      name: 'my-profile',
+      component: MyProfileView,
+      meta: { requiresAuth: true, requiresRole: ['student'], title: 'My Profile' }
     },
     {
       path: '/dashboard',
@@ -128,23 +135,36 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  const userRole = authStore.userRole
+  const isAuthenticated = authStore.isAuthenticated
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    authStore.clearToken(); // Clear any stale token
-    return next('/') // Redirect to login if not authenticated
+  // Redirect unauthenticated users to the staff login page
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    authStore.clearToken();
+    return next('/')
   }
 
-  if (to.meta.requiresRole) {
-    const requiredRoles = Array.isArray(to.meta.requiresRole) ? to.meta.requiresRole : [to.meta.requiresRole];
-    if (!userRole || !requiredRoles.includes(userRole)) {
-      return next('/dashboard'); // Redirect if user does not have the required role
+  // Handle authenticated users
+  if (isAuthenticated) {
+    const authRoutes = ['staff-login', 'staff-register', 'student-login', 'student-register'];
+    if (authRoutes.includes(to.name as string)) {
+      return authStore.isStudent ? next('/my-profile') : next('/dashboard');
     }
-  }
 
-  const authRoutes = ['staff-login', 'staff-register', 'student-login', 'student-register'];
-  if (authRoutes.includes(to.name as string) && authStore.isAuthenticated) {
-    return next('/dashboard');
+    // Student-specific routing
+    if (authStore.isStudent) {
+      const allowedStudentRoutes = ['my-profile', 'survey'];
+      if (!allowedStudentRoutes.includes(to.name as string)) {
+        return next('/my-profile'); // Default to profile page for students
+      }
+    }
+
+    // Role-based access for staff
+    if (to.meta.requiresRole) {
+      const requiredRoles = Array.isArray(to.meta.requiresRole) ? to.meta.requiresRole : [to.meta.requiresRole];
+      if (!authStore.userRole || !requiredRoles.includes(authStore.userRole)) {
+        return authStore.isStudent ? next('/my-profile') : next('/dashboard');
+      }
+    }
   }
 
   next()

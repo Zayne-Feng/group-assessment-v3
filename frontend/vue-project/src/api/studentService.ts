@@ -14,11 +14,15 @@ export interface Student {
 
 // API service functions
 export const getStudents = () => {
-  return apiClient.get<Student[]>('/analysis/students');
+  return apiClient.get<Student[]>('/admin/students');
 };
 
 export const getStudentById = (id: number) => {
   return apiClient.get<Student>(`/analysis/students/${id}`);
+};
+
+export const getMyProfile = () => {
+  return apiClient.get<Student>('/student/me');
 };
 
 export const addStudent = (student: Omit<Student, 'id' | 'enrolments'>) => {

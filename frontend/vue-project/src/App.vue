@@ -13,6 +13,9 @@ const handleLogout = () => {
 }
 
 const currentPageTitle = computed(() => {
+  if (authStore.isStudent) {
+    return route.meta.title || 'Your Wellbeing'
+  }
   return route.meta.title || 'Dashboard'
 })
 </script>
@@ -25,18 +28,26 @@ const currentPageTitle = computed(() => {
         <h1 class="logo">Wellbeing</h1>
       </div>
       <nav class="main-nav">
-        <RouterLink to="/dashboard"><span class="icon">📊</span> Dashboard</RouterLink>
-        <RouterLink to="/students"><span class="icon">👥</span> Students</RouterLink>
-        <RouterLink to="/modules" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📚</span> Modules</RouterLink>
-        <RouterLink to="/alerts" v-if="authStore.isAdmin || authStore.isWellbeingOfficer"><span class="icon">🔔</span> Alerts</RouterLink>
-        <RouterLink to="/users" v-if="authStore.isAdmin"><span class="icon">👤</span> Users</RouterLink>
-        <RouterLink to="/enrolments" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📝</span> Enrolments</RouterLink>
-        <RouterLink to="/attendance" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">✅</span> Attendance</RouterLink>
-        <RouterLink to="/submissions" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📬</span> Submissions</RouterLink>
-        <RouterLink to="/grades" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">🎓</span> Grades</RouterLink>
-        <RouterLink to="/survey-responses" v-if="authStore.isAdmin || authStore.isWellbeingOfficer"><span class="icon">📝</span> Survey Responses</RouterLink>
-        <RouterLink to="/survey"><span class="icon">📋</span> Submit Survey</RouterLink>
-        <RouterLink to="/analytics"><span class="icon">📈</span> Analytics</RouterLink>
+        <!-- Staff Links -->
+        <template v-if="!authStore.isStudent">
+          <RouterLink to="/dashboard"><span class="icon">📊</span> Dashboard</RouterLink>
+          <RouterLink to="/students"><span class="icon">👥</span> Students</RouterLink>
+          <RouterLink to="/modules" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📚</span> Modules</RouterLink>
+          <RouterLink to="/alerts" v-if="authStore.isAdmin || authStore.isWellbeingOfficer"><span class="icon">🔔</span> Alerts</RouterLink>
+          <RouterLink to="/users" v-if="authStore.isAdmin"><span class="icon">👤</span> Users</RouterLink>
+          <RouterLink to="/enrolments" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📝</span> Enrolments</RouterLink>
+          <RouterLink to="/attendance" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">✅</span> Attendance</RouterLink>
+          <RouterLink to="/submissions" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📬</span> Submissions</RouterLink>
+          <RouterLink to="/grades" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">🎓</span> Grades</RouterLink>
+          <RouterLink to="/survey-responses" v-if="authStore.isAdmin || authStore.isWellbeingOfficer"><span class="icon">📝</span> Survey Responses</RouterLink>
+          <RouterLink to="/analytics"><span class="icon">📈</span> Analytics</RouterLink>
+        </template>
+
+        <!-- Student Links -->
+        <template v-if="authStore.isStudent">
+          <RouterLink to="/my-profile"><span class="icon">👤</span> My Profile</RouterLink>
+          <RouterLink to="/survey"><span class="icon">📋</span> Submit Survey</RouterLink>
+        </template>
       </nav>
     </aside>
 

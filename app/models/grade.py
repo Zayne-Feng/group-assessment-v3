@@ -1,13 +1,16 @@
 from datetime import datetime
 
 class Grade:
-    def __init__(self, id=None, student_id=None, module_id=None, assessment_name=None, grade=None, is_active=True):
+    def __init__(self, id=None, student_id=None, module_id=None, assessment_name=None, grade=None, is_active=True, student_name=None, module_title=None):
         self.id = id
         self.student_id = student_id
         self.module_id = module_id
         self.assessment_name = assessment_name
         self.grade = grade
         self.is_active = is_active
+        # For carrying extra data from JOINs
+        self.student_name = student_name
+        self.module_title = module_title
 
     def to_dict(self):
         return {
@@ -16,7 +19,9 @@ class Grade:
             'module_id': self.module_id,
             'assessment_name': self.assessment_name,
             'grade': self.grade,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'student_name': self.student_name,
+            'module_title': self.module_title
         }
 
     @staticmethod

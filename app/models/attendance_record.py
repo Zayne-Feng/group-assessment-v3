@@ -1,5 +1,5 @@
 class AttendanceRecord:
-    def __init__(self, id=None, student_id=None, module_id=None, week_number=None, attended_sessions=None, total_sessions=None, attendance_rate=None, is_active=True):
+    def __init__(self, id=None, student_id=None, module_id=None, week_number=None, attended_sessions=None, total_sessions=None, attendance_rate=None, is_active=True, student_name=None, module_title=None):
         self.id = id
         self.student_id = student_id
         self.module_id = module_id
@@ -8,6 +8,9 @@ class AttendanceRecord:
         self.total_sessions = total_sessions
         self.attendance_rate = attendance_rate
         self.is_active = is_active
+        # For carrying extra data from JOINs
+        self.student_name = student_name
+        self.module_title = module_title
 
     def to_dict(self):
         return {
@@ -18,7 +21,9 @@ class AttendanceRecord:
             'attended_sessions': self.attended_sessions,
             'total_sessions': self.total_sessions,
             'attendance_rate': self.attendance_rate,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'student_name': self.student_name,
+            'module_title': self.module_title
         }
 
     @staticmethod
