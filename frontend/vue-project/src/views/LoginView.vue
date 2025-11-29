@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { login as apiLogin } from '@/api/authService'
 
@@ -41,7 +41,6 @@ const username = ref('')
 const password = ref('')
 const message = ref('')
 const messageType = ref<'success' | 'error' | ''>('')
-const router = useRouter()
 const authStore = useAuthStore()
 
 const handleLogin = async () => {
@@ -52,11 +51,16 @@ const handleLogin = async () => {
       username: username.value,
       password: password.value
     })
+
     message.value = response.data.message
     messageType.value = 'success'
     authStore.setToken(response.data.access_token)
     authStore.setUserRole(response.data.user_role)
-    router.push('/dashboard')
+
+    setTimeout(() => {
+      window.location.href = '/dashboard'
+    }, 100);
+
   } catch (error: any) {
     message.value = error.response?.data?.message || 'An unexpected error occurred.'
     messageType.value = 'error'

@@ -8,16 +8,26 @@ class SurveyResponseRepository:
     @staticmethod
     def get_all_survey_responses():
         db = get_db()
-        cursor = db.execute("SELECT id, student_id, module_id, week_number, stress_level, hours_slept, mood_comment, created_at, is_active FROM survey_responses WHERE is_active = 1")
-        surveys = [SurveyResponse.from_row(row) for row in cursor.fetchall()]
-        return surveys
+        cursor = db.execute("""
+            SELECT 
+                sr.id, sr.student_id, sr.module_id, sr.week_number, 
+                sr.stress_level, sr.hours_slept, sr.mood_comment, sr.created_at,
+                s.full_name as student_name,
+                m.module_title as module_title
+            FROM survey_responses sr
+            LEFT JOIN students s ON sr.student_id = s.id
+            LEFT JOIN modules m ON sr.module_id = m.id
+            WHERE sr.is_active = 1
+        """)
+        # Directly return a list of dictionaries, which is more flexible for API responses
+        return [dict(row) for row in cursor.fetchall()]
 
     @staticmethod
     def get_survey_response_by_id(response_id):
         db = get_db()
         cursor = db.execute("SELECT id, student_id, module_id, week_number, stress_level, hours_slept, mood_comment, created_at, is_active FROM survey_responses WHERE id = ? AND is_active = 1", (response_id,))
-        survey = SurveyResponse.from_row(cursor.fetchone())
-        return survey
+        row = cursor.fetchone()
+        return SurveyResponse.from_row(row) if row else None
 
     @staticmethod
     def create_survey_response(student_id, module_id, week_number, stress_level, hours_slept, mood_comment):
@@ -29,10 +39,15 @@ class SurveyResponseRepository:
             (student_id, module_id, week_number, stress_level, hours_slept, mood_comment, created_at)
         )
         db.commit()
-        new_survey = SurveyResponse(id=cursor.lastrowid, student_id=student_id, module_id=module_id, week_number=week_number, stress_level=stress_level, hours_slept=hours_slept, mood_comment=mood_comment, created_at=created_at)
+        new_survey_id = cursor.lastrowid
         
-        # After creating survey, check for stress events and alerts
-        SurveyResponseRepository._check_for_stress_events_and_alerts(new_survey)
+        # Fetch the newly created response to pass to the checking method
+        cursor = db.execute("SELECT * FROM survey_responses WHERE id = ?", (new_survey_id,))
+        new_survey_row = cursor.fetchone()
+        new_survey = SurveyResponse.from_row(new_survey_row)
+
+        if new_survey:
+            SurveyResponseRepository._check_for_stress_events_and_alerts(new_survey)
         
         return new_survey
 

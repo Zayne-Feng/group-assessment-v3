@@ -8,6 +8,7 @@ import ModulesView from '../views/ModulesView.vue'
 import AlertsView from '../views/AlertsView.vue'
 import UsersView from '../views/UsersView.vue'
 import SurveyView from '../views/SurveyView.vue'
+import SurveyResponsesView from '../views/SurveyResponsesView.vue'
 import EnrolmentsView from '../views/EnrolmentsView.vue'
 import AttendanceView from '../views/AttendanceView.vue'
 import SubmissionsView from '../views/SubmissionsView.vue'
@@ -61,6 +62,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresRole: ['admin', 'wellbeing_officer'], title: 'Wellbeing Alerts' }
     },
     {
+      path: '/survey-responses',
+      name: 'survey-responses',
+      component: SurveyResponsesView,
+      meta: { requiresAuth: true, requiresRole: ['admin', 'wellbeing_officer'], title: 'Survey Responses' }
+    },
+    {
       path: '/users',
       name: 'users',
       component: UsersView,
@@ -107,20 +114,25 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
+  const userRole = authStore.userRole
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     authStore.clearToken(); // Clear any stale token
-    next('/') // Redirect to login if not authenticated
+    return next('/') // Redirect to login if not authenticated
   }
-  else if (to.meta.requiresRole && !to.meta.requiresRole.includes(authStore.userRole)) {
-    next('/dashboard')
+
+  if (to.meta.requiresRole) {
+    const requiredRoles = Array.isArray(to.meta.requiresRole) ? to.meta.requiresRole : [to.meta.requiresRole];
+    if (!userRole || !requiredRoles.includes(userRole)) {
+      return next('/dashboard'); // Redirect if user does not have the required role
+    }
   }
-  else if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
-    next('/dashboard')
+
+  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
+    return next('/dashboard')
   }
-  else {
-    next()
-  }
+
+  next()
 })
 
 export default router

@@ -235,7 +235,7 @@ def create_survey_response():
 @role_required(['admin', 'wellbeing_officer'])
 def get_survey_responses():
     surveys = SurveyResponseRepository.get_all_survey_responses()
-    return jsonify([s.to_dict() for s in surveys])
+    return jsonify(surveys)
 
 @admin.route('/survey-responses/<int:response_id>', methods=['PUT'])
 @jwt_required()

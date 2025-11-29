@@ -34,6 +34,7 @@ const currentPageTitle = computed(() => {
         <RouterLink to="/attendance" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">✅</span> Attendance</RouterLink>
         <RouterLink to="/submissions" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">📬</span> Submissions</RouterLink>
         <RouterLink to="/grades" v-if="authStore.isAdmin || authStore.isCourseDirector"><span class="icon">🎓</span> Grades</RouterLink>
+        <RouterLink to="/survey-responses" v-if="authStore.isAdmin || authStore.isWellbeingOfficer"><span class="icon">📝</span> Survey Responses</RouterLink>
         <RouterLink to="/survey"><span class="icon">📋</span> Submit Survey</RouterLink>
         <RouterLink to="/analytics"><span class="icon">📈</span> Analytics</RouterLink>
       </nav>
