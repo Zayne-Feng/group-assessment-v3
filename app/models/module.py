@@ -1,33 +1,42 @@
-class Module:
-    def __init__(self, id=None, module_code=None, module_title=None, credit=None, academic_year=None, is_active=True):
-        self.id = id
+from datetime import datetime
+from .base_model import BaseModel
+
+class Module(BaseModel):
+    def __init__(self, id=None, module_code=None, module_title=None, credit=None, academic_year=None, **kwargs):
+        super().__init__(id=id, **kwargs)
         self.module_code = module_code
         self.module_title = module_title
         self.credit = credit
         self.academic_year = academic_year
-        self.is_active = is_active
 
     def to_dict(self):
-        return {
-            'id': self.id,
+        data = super().to_dict()
+        data.update({
             'module_code': self.module_code,
             'module_title': self.module_title,
             'credit': self.credit,
             'academic_year': self.academic_year,
-            'is_active': self.is_active
-        }
+        })
+        return data
 
-    @staticmethod
-    def from_row(row):
+    @classmethod
+    def from_row(cls, row):
         if row is None:
             return None
-        return Module(
-            id=row['id'],
-            module_code=row['module_code'],
-            module_title=row['module_title'],
-            credit=row['credit'],
-            academic_year=row['academic_year'],
-            is_active=bool(row['is_active'])
+        row_dict = dict(row)
+
+        # Parse created_at if it's a string
+        created_at_str = row_dict.get('created_at')
+        created_at = datetime.fromisoformat(created_at_str) if isinstance(created_at_str, str) else created_at_str
+
+        return cls(
+            id=row_dict.get('id'),
+            module_code=row_dict.get('module_code'),
+            module_title=row_dict.get('module_title'),
+            credit=row_dict.get('credit'),
+            academic_year=row_dict.get('academic_year'),
+            is_active=bool(row_dict.get('is_active')),
+            created_at=created_at
         )
 
     def __repr__(self):

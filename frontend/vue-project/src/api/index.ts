@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth'; // Import the auth store
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -9,8 +10,10 @@ const apiClient = axios.create({
 
 // Add a request interceptor to include the token in headers
 apiClient.interceptors.request.use(config => {
-  // Retrieve the token from localStorage using the correct key
-  const token = localStorage.getItem('access_token');
+  // Get the auth store instance
+  const authStore = useAuthStore();
+  // Retrieve the token directly from the store's state
+  const token = authStore.accessToken;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

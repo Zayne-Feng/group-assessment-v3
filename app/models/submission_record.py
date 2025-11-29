@@ -1,8 +1,9 @@
 from datetime import datetime, date
+from .base_model import BaseModel
 
-class SubmissionRecord:
-    def __init__(self, id=None, student_id=None, module_id=None, assessment_name=None, due_date=None, submitted_date=None, is_submitted=False, is_late=False, is_active=True, student_name=None, module_title=None):
-        self.id = id
+class SubmissionRecord(BaseModel):
+    def __init__(self, id=None, student_id=None, module_id=None, assessment_name=None, due_date=None, submitted_date=None, is_submitted=False, is_late=False, student_name=None, module_title=None, **kwargs):
+        super().__init__(id=id, **kwargs)
         self.student_id = student_id
         self.module_id = module_id
         self.assessment_name = assessment_name
@@ -10,14 +11,12 @@ class SubmissionRecord:
         self.submitted_date = submitted_date
         self.is_submitted = is_submitted
         self.is_late = is_late
-        self.is_active = is_active
-        # For carrying extra data from JOINs
         self.student_name = student_name
         self.module_title = module_title
 
     def to_dict(self):
-        return {
-            'id': self.id,
+        data = super().to_dict()
+        data.update({
             'student_id': self.student_id,
             'module_id': self.module_id,
             'assessment_name': self.assessment_name,
@@ -25,15 +24,16 @@ class SubmissionRecord:
             'submitted_date': self.submitted_date.isoformat() if self.submitted_date else None,
             'is_submitted': self.is_submitted,
             'is_late': self.is_late,
-            'is_active': self.is_active,
             'student_name': self.student_name,
             'module_title': self.module_title
-        }
+        })
+        return data
 
-    @staticmethod
-    def from_row(row):
+    @classmethod
+    def from_row(cls, row):
         if row is None:
             return None
+        row_dict = dict(row)
         
         # Helper to parse date strings safely
         def parse_date(date_str):
@@ -44,16 +44,21 @@ class SubmissionRecord:
             except (ValueError, TypeError):
                 return None
 
-        return SubmissionRecord(
-            id=row['id'],
-            student_id=row['student_id'],
-            module_id=row['module_id'],
-            assessment_name=row['assessment_name'],
-            due_date=parse_date(row['due_date']),
-            submitted_date=parse_date(row['submitted_date']),
-            is_submitted=bool(row['is_submitted']),
-            is_late=bool(row['is_late']),
-            is_active=bool(row['is_active'])
+        # Parse created_at if it's a string
+        created_at_str = row_dict.get('created_at')
+        created_at = datetime.fromisoformat(created_at_str) if isinstance(created_at_str, str) else created_at_str
+
+        return cls(
+            id=row_dict.get('id'),
+            student_id=row_dict.get('student_id'),
+            module_id=row_dict.get('module_id'),
+            assessment_name=row_dict.get('assessment_name'),
+            due_date=parse_date(row_dict.get('due_date')),
+            submitted_date=parse_date(row_dict.get('submitted_date')),
+            is_submitted=bool(row_dict.get('is_submitted')),
+            is_late=bool(row_dict.get('is_late')),
+            is_active=bool(row_dict.get('is_active')),
+            created_at=created_at
         )
 
     def __repr__(self):

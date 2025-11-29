@@ -1,20 +1,23 @@
 <template>
-  <div v-if="student">
+  <div v-if="student" class="student-detail-page">
     <div class="page-header">
-      <h1>{{ student.full_name }} Details</h1>
+      <h1>{{ student.full_name }} <span class="student-id-badge">ID: {{ student.student_number }}</span></h1>
+      <p class="student-contact-info">{{ student.email }} | {{ student.course_name }} (Year {{ student.year_of_study }})</p>
     </div>
 
-    <div class="detail-card card">
-      <h2>Student Information</h2>
-      <p><strong>Student Number:</strong> {{ student.student_number }}</p>
-      <p><strong>Email:</strong> {{ student.email }}</p>
-      <p><strong>Course:</strong> {{ student.course_name }}</p>
-      <p><strong>Year of Study:</strong> {{ student.year_of_study }}</p>
-      <h3>Enrolled Modules</h3>
-      <ul v-if="student.enrolments && student.enrolments.length">
-        <li v-for="module in student.enrolments" :key="module">{{ module }}</li>
-      </ul>
-      <p v-else class="no-data">No enrolled modules.</p>
+    <div class="summary-cards">
+      <div class="summary-card">
+        <h3>Overall Attendance</h3>
+        <p class="summary-value">{{ averageAttendance }}%</p>
+      </div>
+      <div class="summary-card">
+        <h3>Current Stress Level</h3>
+        <p class="summary-value">{{ currentStressLevel || 'N/A' }}</p>
+      </div>
+      <div class="summary-card">
+        <h3>Pending Alerts</h3>
+        <p class="summary-value">{{ pendingAlertsCount }}</p>
+      </div>
     </div>
 
     <div class="charts-section card">
@@ -22,12 +25,12 @@
       <div class="charts-grid">
         <div class="chart-card">
           <h3>Weekly Stress Trend</h3>
-          <LineChart v-if="stressData.labels.length" :chart-data="stressChartData" :chart-options="lineChartOptions" />
+          <LineChart v-if="stressData.labels.length" :chart-data="stressChartData" :chart-options="stressChartOptions" />
           <p v-else class="no-data">No stress data available.</p>
         </div>
         <div class="chart-card">
           <h3>Weekly Attendance Trend (%)</h3>
-          <BarChart v-if="attendanceData.labels.length" :chart-data="attendanceChartData" :chart-options="barChartOptions" />
+          <LineChart v-if="attendanceData.labels.length" :chart-data="attendanceChartData" :chart-options="attendanceChartOptions" />
           <p v-else class="no-data">No attendance data available.</p>
         </div>
       </div>
@@ -85,18 +88,21 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getStudentById, type Student } from '@/api/studentService'
-import { getStressTrendForStudent, getAttendanceTrendForStudent, type TrendData } from '@/api/analyticsService' // Corrected import
+import { getStressTrendForStudent, getAttendanceTrendForStudent, getAverageAttendanceForStudent, type TrendData } from '@/api/analyticsService'
 import { getAlertsByStudentId, type Alert } from '@/api/alertService'
 import LineChart from '@/components/LineChart.vue'
-import BarChart from '@/components/BarChart.vue'
 
 const route = useRoute()
 const studentId = parseInt(route.params.id as string)
 
 const student = ref<Student | null>(null)
+const averageAttendance = ref(0)
+const currentStressLevel = ref<number | string>('N/A')
+const pendingAlertsCount = ref(0)
+
 const stressData = ref<TrendData>({ labels: [], data: [] })
 const attendanceData = ref<TrendData>({ labels: [], data: [] })
-const allAlerts = ref<Alert[]>([]) // All alerts for this student
+const allAlerts = ref<Alert[]>([])
 
 // Sorting for alerts
 const sortKey = ref<keyof Alert>('created_at')
@@ -104,7 +110,7 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 
 // Pagination for alerts
 const currentPage = ref(1)
-const itemsPerPage = ref(5) // Display fewer alerts per page
+const itemsPerPage = ref(5)
 
 const stressChartData = computed(() => ({
   labels: stressData.value.labels,
@@ -115,6 +121,7 @@ const stressChartData = computed(() => ({
       borderColor: '#f87979',
       tension: 0.3,
       data: stressData.value.data,
+      fill: false,
     },
   ],
 }))
@@ -126,40 +133,54 @@ const attendanceChartData = computed(() => ({
       label: 'Attendance Rate (%)',
       backgroundColor: 'rgba(66, 185, 131, 0.6)',
       borderColor: '#42b983',
+      tension: 0.3,
       data: attendanceData.value.data,
+      fill: false,
     },
   ],
 }))
 
-const lineChartOptions = ref({
+const baseLineChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: true,
+    },
+    title: {
+      display: false,
+    }
+  }
+};
+
+const stressChartOptions = computed(() => ({
+  ...baseLineChartOptions,
   scales: {
     y: {
       beginAtZero: true,
-      max: 5,
+      max: 5, // Max for stress level
       title: {
         display: true,
         text: 'Stress Level'
       }
     }
   }
-})
+}));
 
-const barChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
+const attendanceChartOptions = computed(() => ({
+  ...baseLineChartOptions,
   scales: {
     y: {
       beginAtZero: true,
-      max: 100,
+      max: 100, // Max for attendance rate
       title: {
         display: true,
         text: 'Attendance Rate (%)'
       }
     }
   }
-})
+}));
+
 
 // Computed properties for alerts interactivity
 const sortedAlerts = computed(() => {
@@ -216,97 +237,132 @@ const prevPage = () => {
 
 onMounted(async () => {
   try {
-    const [studentRes, stressRes, attendanceRes, alertsRes] = await Promise.all([
+    const [studentRes, stressRes, attendanceRes, avgAttendanceRes, alertsRes] = await Promise.all([
       getStudentById(studentId),
       getStressTrendForStudent(studentId),
       getAttendanceTrendForStudent(studentId),
-      getAlertsByStudentId(studentId) // Fetch all alerts for this student
+      getAverageAttendanceForStudent(studentId),
+      getAlertsByStudentId(studentId)
     ])
 
     student.value = studentRes.data
     stressData.value = stressRes.data
     attendanceData.value = attendanceRes.data
+    averageAttendance.value = avgAttendanceRes.data.average_attendance
     allAlerts.value = alertsRes.data
 
+    // Calculate current stress level (last reported week)
+    if (stressData.value.data.length > 0) {
+      currentStressLevel.value = stressData.value.data[stressData.value.data.length - 1];
+    }
+
+    // Calculate pending alerts count
+    pendingAlertsCount.value = allAlerts.value.filter(alert => !alert.resolved).length;
+
   } catch (error) {
-    console.error('Failed to fetch student data:', error)
+    console.error('Failed to fetch student data:', error);
     // Optionally set an error message for the user
   }
 })
 </script>
 
 <style scoped>
-/* General page container is handled by App.vue's main-content padding */
+.student-detail-page {
+  padding: 1rem; /* Add some padding around the whole page */
+}
 
 .page-header {
+  background-color: var(--color-background);
+  padding: 2rem;
+  border-radius: 12px;
   margin-bottom: 2rem;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .page-header h1 {
-  font-size: 2.2rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  color: var(--color-heading);
+  color: var(--vt-c-indigo);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
 }
 
-.detail-card, .charts-section, .student-alerts-section {
+.student-id-badge {
+  background-color: var(--color-background-mute);
+  color: var(--color-text-light);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.student-contact-info {
+  font-size: 1.1rem;
+  color: var(--color-text-light);
+  margin-top: 0.5rem;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.summary-card {
+  background-color: var(--color-background);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card h3 {
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.summary-card .summary-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--vt-c-indigo);
+}
+
+.charts-section, .student-alerts-section {
   background-color: var(--color-background);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--color-border);
-  margin-bottom: 2rem; /* Spacing between sections */
+  margin-bottom: 2rem;
 }
 
-.detail-card h2, .charts-section h2, .student-alerts-section h2 {
-  color: var(--vt-c-indigo);
+.charts-section h2, .student-alerts-section h2 {
+  color: var(--color-heading);
   margin-bottom: 1.5rem;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 600;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 0.75rem;
 }
 
-.detail-card p {
-  margin-bottom: 0.75rem;
-  color: var(--color-text);
-}
-
-.detail-card strong {
-  color: var(--color-heading);
-}
-
-.detail-card h3 {
-  color: var(--color-heading);
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.detail-card ul {
-  list-style: none; /* Remove default bullet */
-  padding-left: 0;
-  margin-top: 0.5rem;
-}
-
-.detail-card ul li {
-  background-color: var(--color-background-soft);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 0.5rem;
-  display: inline-block; /* Display as tags */
-  margin-right: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--color-text);
-}
-
-.charts-section {
-  margin-top: 2rem;
-}
-
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 2rem;
 }
 
@@ -316,7 +372,10 @@ onMounted(async () => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 1.5rem; /* Adjust padding for chart cards */
+  padding: 1.5rem;
+  background-color: var(--color-background-soft);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
 .chart-card h3 {
@@ -368,7 +427,7 @@ onMounted(async () => {
   text-transform: uppercase;
   font-size: 0.8rem;
   letter-spacing: 0.5px;
-  cursor: pointer; /* Make sortable */
+  cursor: pointer;
   transition: color 0.2s;
 }
 

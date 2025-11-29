@@ -1,8 +1,9 @@
 from datetime import datetime
+from .base_model import BaseModel
 
-class StressEvent:
-    def __init__(self, id=None, student_id=None, module_id=None, survey_response_id=None, week_number=None, stress_level=None, cause_category=None, description=None, source=None, created_at=None, is_active=True):
-        self.id = id
+class StressEvent(BaseModel):
+    def __init__(self, id=None, student_id=None, module_id=None, survey_response_id=None, week_number=None, stress_level=None, cause_category=None, description=None, source=None, **kwargs):
+        super().__init__(id=id, **kwargs)
         self.student_id = student_id
         self.module_id = module_id
         self.survey_response_id = survey_response_id
@@ -11,12 +12,10 @@ class StressEvent:
         self.cause_category = cause_category
         self.description = description
         self.source = source
-        self.created_at = created_at if created_at is not None else datetime.utcnow()
-        self.is_active = is_active
 
     def to_dict(self):
-        return {
-            'id': self.id,
+        data = super().to_dict()
+        data.update({
             'student_id': self.student_id,
             'module_id': self.module_id,
             'survey_response_id': self.survey_response_id,
@@ -25,26 +24,31 @@ class StressEvent:
             'cause_category': self.cause_category,
             'description': self.description,
             'source': self.source,
-            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
-            'is_active': self.is_active
-        }
+        })
+        return data
 
-    @staticmethod
-    def from_row(row):
+    @classmethod
+    def from_row(cls, row):
         if row is None:
             return None
-        return StressEvent(
-            id=row['id'],
-            student_id=row['student_id'],
-            module_id=row['module_id'],
-            survey_response_id=row['survey_response_id'],
-            week_number=row['week_number'],
-            stress_level=row['stress_level'],
-            cause_category=row['cause_category'],
-            description=row['description'],
-            source=row['source'],
-            created_at=datetime.fromisoformat(row['created_at']) if isinstance(row['created_at'], str) else row['created_at'],
-            is_active=bool(row['is_active'])
+        row_dict = dict(row)
+
+        # Parse created_at if it's a string
+        created_at_str = row_dict.get('created_at')
+        created_at = datetime.fromisoformat(created_at_str) if isinstance(created_at_str, str) else created_at_str
+
+        return cls(
+            id=row_dict.get('id'),
+            student_id=row_dict.get('student_id'),
+            module_id=row_dict.get('module_id'),
+            survey_response_id=row_dict.get('survey_response_id'),
+            week_number=row_dict.get('week_number'),
+            stress_level=row_dict.get('stress_level'),
+            cause_category=row_dict.get('cause_category'),
+            description=row_dict.get('description'),
+            source=row_dict.get('source'),
+            is_active=bool(row_dict.get('is_active')),
+            created_at=created_at
         )
 
     def __repr__(self):

@@ -43,3 +43,7 @@ export const getStressTrendForStudent = (studentId: number) => {
 export const getAttendanceTrendForStudent = (studentId: number) => {
   return apiClient.get<TrendData>(`/analysis/students/${studentId}/attendance-trend`);
 };
+
+export const getAverageAttendanceForStudent = (studentId: number) => {
+  return apiClient.get<{ average_attendance: number }>(`/analysis/students/${studentId}/average-attendance`);
+};

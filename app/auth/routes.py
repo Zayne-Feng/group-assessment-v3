@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from . import auth
 from .services import register_student
-from app.repositories.user_repository import UserRepository
+from app.repositories.user_repository import user_repository # Import the instance
 from flask_jwt_extended import create_access_token
 
 @auth.route('/register', methods=['POST'])
@@ -13,10 +13,10 @@ def register():
     if not username or not password:
         return jsonify({'message': 'Username and password are required'}), 400
 
-    if UserRepository.get_user_by_username(username):
+    if user_repository.get_user_by_username(username):
         return jsonify({'message': 'Username already exists'}), 400
 
-    new_user = UserRepository.create_user(username, password, role='user')
+    new_user = user_repository.create_user(username, password, role='user')
     if new_user:
         return jsonify({'message': 'Registration successful'}), 201
     
@@ -55,7 +55,7 @@ def login():
     if not username or not password or not context:
         return jsonify({'message': 'Username, password, and context are required'}), 400
 
-    user = UserRepository.get_user_by_username(username)
+    user = user_repository.get_user_by_username(username) # Use the instance
 
     if not user or not user.check_password(password):
         return jsonify({'message': 'Invalid username or password'}), 401
