@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-*   **后端**: Python, Flask, SQLAlchemy
+*   **后端**: Python, Flask, Flask-JWT-Extended, SQLAlchemy
 *   **前端**: Vue 3, TypeScript, Vite, Pinia, Axios
 *   **数据库**: SQLite (用于开发和测试)
 *   **测试**: Pytest (后端), Vitest (前端)
@@ -14,38 +14,76 @@
 *   Python (推荐版本 3.9+)
 *   Node.js (推荐版本 18+)
 
+## 项目结构
+
+本项目采用前后端分离的架构：
+
+*   **`app/`**: Flask 后端的核心业务逻辑模块，包含认证、管理、警报、分析、模型和仓库等。
+*   **`frontend/vue-project/`**: Vue.js 前端应用程序的根目录，包含所有前端源代码和配置。
+*   **`app.py`**: Flask 后端应用程序的入口文件。
+*   **`config.py`**: 后端配置管理。
+*   **`tests/`**: 项目的测试文件。
+*   **`.venv/`**: Python 虚拟环境目录。
+
+## 主要功能
+
+### 后端 (Flask)
+
+*   **用户认证与授权**: 提供用户注册、登录、登出及权限管理。
+*   **管理功能**: 后台用户及系统配置管理。
+*   **数据模型与存储**: 定义数据结构，提供数据库交互接口。
+*   **警报/通知系统**: 创建、管理和发送各类警报。
+*   **数据分析**: 处理并提供数据分析接口。
+
+### 前端 (Vue.js)
+
+*   **用户界面**: 展示后端数据，提供直观的用户操作界面。
+*   **用户交互**: 处理用户输入，响应用户操作，与后端 API 交互。
+*   **页面与路由**: 管理前端页面导航和视图展示。
+
 ## 本地开发环境搭建
 
 ### 1. 克隆项目
 
 ```bash
 git clone <your-repository-url>
-cd programming-for-ai-group-assessment-repository
+cd group-assessment-v3 # 根据你的实际项目目录名调整
 ```
 
 ### 2. 后端设置
 
 ```bash
 # 1. 创建并激活 Python 虚拟环境
-python3 -m venv venv
+# 如果 .venv 目录已存在，则直接激活
+python3 -m venv .venv
 
-# Windows
-# venv\Scripts\activate
+# Windows PowerShell
+.\.venv\Scripts\activate
 
 # macOS / Linux
-source venv/bin/activate
+source .venv/bin/activate
 
 # 2. 安装后端依赖
 pip install -r requirements.txt
 
-# 3. (可选) 创建 .flaskenv 文件并设置环境变量
-# 在项目根目录创建一个名为 .flaskenv 的文件，并填入以下内容：
-# FLASK_APP=manage.py
-# FLASK_ENV=development
+# 3. 初始化数据库
+# 这一步会删除旧的数据库文件并创建新的表，然后填充初始数据。
+# 请确保在项目根目录执行。
 
-# 4. 初始化数据库 (如果需要)
-# 假设你在 manage.py 中有 'init-db' 命令
-# flask init-db
+# 首先，设置 FLASK_APP 环境变量指向 manage.py
+# Windows PowerShell
+$env:FLASK_APP="manage.py"
+# macOS / Linux
+export FLASK_APP=manage.py
+
+# (可选) 删除旧的数据库文件，确保干净初始化
+# Windows
+# del data-dev.sqlite
+# macOS / Linux
+# rm data-dev.sqlite
+
+# 运行数据库初始化命令
+flask init-db
 ```
 
 ### 3. 前端设置
@@ -62,7 +100,7 @@ npm install
 # server: {
 #   proxy: {
 #     '/api': {
-#       target: 'http://127.0.0.1:5000', // 你的 Flask 后端地址
+#       target: 'http://127.0.0.1:5000', # 你的 Flask 后端地址
 #       changeOrigin: true,
 #     }
 #   }
@@ -77,8 +115,14 @@ npm install
     *   确保你的 Python 虚拟环境已激活。
     *   在项目根目录运行：
         ```bash
-        flask run
+        python app.py
         ```
+    *   或者，如果你想使用 Flask CLI (需要设置 FLASK_APP=app.py)：
+        # Windows PowerShell
+        $env:FLASK_APP="app.py"
+        # macOS / Linux
+        export FLASK_APP=app.py
+        flask run
     *   后端服务将默认在 `http://127.0.0.1:5000` 启动。
 
 2.  **运行前端服务**:
