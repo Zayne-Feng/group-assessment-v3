@@ -6,7 +6,7 @@ class UserRepository:
     @staticmethod
     def get_all_users(include_inactive=False):
         db = get_db()
-        sql = "SELECT id, username, password_hash, role, created_at, is_active FROM users"
+        sql = "SELECT * FROM users"
         if not include_inactive:
             sql += " WHERE is_active = 1"
         cursor = db.execute(sql)
@@ -16,7 +16,7 @@ class UserRepository:
     @staticmethod
     def get_user_by_id(user_id, include_inactive=False):
         db = get_db()
-        sql = "SELECT id, username, password_hash, role, created_at, is_active FROM users WHERE id = ?"
+        sql = "SELECT * FROM users WHERE id = ?"
         params = (user_id,)
         
         if not include_inactive:
@@ -29,7 +29,7 @@ class UserRepository:
     @staticmethod
     def get_user_by_username(username, include_inactive=False):
         db = get_db()
-        sql = "SELECT id, username, password_hash, role, created_at, is_active FROM users WHERE username = ?"
+        sql = "SELECT * FROM users WHERE username = ?"
         params = (username,)
 
         if not include_inactive:
@@ -40,18 +40,17 @@ class UserRepository:
         return User.from_row(row) if row else None
 
     @staticmethod
-    def create_user(username, password, role='user'):
+    def create_user(username, password, role='user', student_id=None):
         db = get_db()
-        new_user = User(username=username, role=role)
+        new_user = User(username=username, role=role, student_id=student_id)
         new_user.set_password(password)
         
         cursor = db.execute(
-            "INSERT INTO users (username, password_hash, role, created_at, is_active) VALUES (?, ?, ?, ?, ?)",
-            (new_user.username, new_user.password_hash, new_user.role, new_user.created_at.isoformat(), new_user.is_active)
+            "INSERT INTO users (username, password_hash, role, student_id, created_at, is_active) VALUES (?, ?, ?, ?, ?, ?)",
+            (new_user.username, new_user.password_hash, new_user.role, new_user.student_id, new_user.created_at.isoformat(), new_user.is_active)
         )
         db.commit()
         new_user_id = cursor.lastrowid
-        # After creation, get it back to ensure all fields are correctly typed
         return UserRepository.get_user_by_id(new_user_id, include_inactive=True)
 
     @staticmethod
@@ -62,7 +61,6 @@ class UserRepository:
             (username, role, is_active, user_id)
         )
         db.commit()
-        # After updating, get the user regardless of their active status
         return UserRepository.get_user_by_id(user_id, include_inactive=True)
 
     @staticmethod

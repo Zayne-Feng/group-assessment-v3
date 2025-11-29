@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import StudentLoginView from '../views/StudentLoginView.vue'
+import StudentRegisterView from '../views/StudentRegisterView.vue'
 import StudentsView from '../views/StudentsView.vue'
 import StudentDetailView from '../views/StudentDetailView.vue'
 import DashboardView from '../views/DashboardView.vue'
@@ -21,15 +23,27 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'login',
+      name: 'staff-login',
       component: LoginView,
-      meta: { title: 'Login' }
+      meta: { title: 'Staff Login' }
     },
     {
       path: '/register',
-      name: 'register',
+      name: 'staff-register',
       component: RegisterView,
-      meta: { title: 'Register' }
+      meta: { title: 'Staff Register' }
+    },
+    {
+      path: '/student/login',
+      name: 'student-login',
+      component: StudentLoginView,
+      meta: { title: 'Student Login' }
+    },
+    {
+      path: '/student/register',
+      name: 'student-register',
+      component: StudentRegisterView,
+      meta: { title: 'Student Register' }
     },
     {
       path: '/dashboard',
@@ -128,8 +142,9 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
-    return next('/dashboard')
+  const authRoutes = ['staff-login', 'staff-register', 'student-login', 'student-register'];
+  if (authRoutes.includes(to.name as string) && authStore.isAuthenticated) {
+    return next('/dashboard');
   }
 
   next()

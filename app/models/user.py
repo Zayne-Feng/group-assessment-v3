@@ -2,11 +2,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 class User:
-    def __init__(self, id=None, username=None, password_hash=None, role='user', created_at=None, is_active=True):
+    def __init__(self, id=None, username=None, password_hash=None, role='user', student_id=None, created_at=None, is_active=True):
         self.id = id
         self.username = username
         self.password_hash = password_hash
         self.role = role
+        self.student_id = student_id
         self.created_at = created_at if created_at is not None else datetime.utcnow()
         self.is_active = is_active
 
@@ -21,6 +22,7 @@ class User:
             'id': self.id,
             'username': self.username,
             'role': self.role,
+            'student_id': self.student_id,
             'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
             'is_active': self.is_active
         }
@@ -29,11 +31,20 @@ class User:
     def from_row(row):
         if row is None:
             return None
+        
+        # Handle student_id safely, as it might not exist for all rows or could be None
+        student_id = None
+        try:
+            student_id = row['student_id']
+        except (KeyError, IndexError):
+            pass # Keep student_id as None if the column doesn't exist
+
         return User(
             id=row['id'],
             username=row['username'],
             password_hash=row['password_hash'],
             role=row['role'],
+            student_id=student_id,
             created_at=datetime.fromisoformat(row['created_at']) if isinstance(row['created_at'], str) else row['created_at'],
             is_active=bool(row['is_active'])
         )

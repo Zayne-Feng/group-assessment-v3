@@ -7,16 +7,23 @@ class StudentRepository:
     @staticmethod
     def get_all_students():
         db = get_db()
-        cursor = db.execute("SELECT id, student_number, full_name, email, course_name, year_of_study, is_active FROM students WHERE is_active = 1")
+        cursor = db.execute("SELECT * FROM students WHERE is_active = 1")
         students = [Student.from_row(row) for row in cursor.fetchall()]
         return students
 
     @staticmethod
     def get_student_by_id(student_id):
         db = get_db()
-        cursor = db.execute("SELECT id, student_number, full_name, email, course_name, year_of_study, is_active FROM students WHERE id = ? AND is_active = 1", (student_id,))
-        student = Student.from_row(cursor.fetchone())
-        return student
+        cursor = db.execute("SELECT * FROM students WHERE id = ? AND is_active = 1", (student_id,))
+        row = cursor.fetchone()
+        return Student.from_row(row) if row else None
+
+    @staticmethod
+    def get_student_by_student_number(student_number):
+        db = get_db()
+        cursor = db.execute("SELECT * FROM students WHERE student_number = ? AND is_active = 1", (student_number,))
+        row = cursor.fetchone()
+        return Student.from_row(row) if row else None
 
     @staticmethod
     def get_student_enrolments(student_id):
@@ -46,7 +53,7 @@ class StudentRepository:
             "INSERT INTO students (student_number, full_name, email, course_name, year_of_study, is_active) VALUES (?, ?, ?, ?, ?, 1)",
             (student_number, full_name, email, course_name, year_of_study)
         )
-        db.commit()
+        # No commit here, it will be handled by the service layer
         return Student(id=cursor.lastrowid, student_number=student_number, full_name=full_name, email=email, course_name=course_name, year_of_study=year_of_study)
 
     @staticmethod
@@ -64,4 +71,12 @@ class StudentRepository:
         db = get_db()
         db.execute("UPDATE students SET is_active = 0 WHERE id = ?", (student_id,))
         db.commit()
+        return True
+
+    @staticmethod
+    def delete_student_hard(student_id):
+        """ A hard delete for rolling back a transaction. """
+        db = get_db()
+        db.execute("DELETE FROM students WHERE id = ?", (student_id,))
+        # No commit here, it will be handled by the service layer
         return True

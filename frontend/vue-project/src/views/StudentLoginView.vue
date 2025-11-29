@@ -3,17 +3,17 @@
     <div class="left-panel">
       <div class="overlay-content">
         <h1>Student Wellbeing</h1>
-        <p>Monitoring academic and personal wellness</p>
+        <p>Your space for academic and personal wellness</p>
       </div>
     </div>
     <div class="right-panel">
       <div class="form-wrapper">
-        <h2>Staff Login</h2>
-        <p class="subtitle">Welcome back, please enter your details.</p>
+        <h2>Student Login</h2>
+        <p class="subtitle">Welcome, please enter your details to log in.</p>
         <form @submit.prevent="handleLogin">
           <div class="form-group">
-            <label for="username">Username</label>
-            <input id="username" type="text" v-model="username" required placeholder="Enter your username">
+            <label for="username">Username (Your Email)</label>
+            <input id="username" type="text" v-model="username" required placeholder="Enter your email">
           </div>
           <div class="form-group">
             <label for="password">Password</label>
@@ -24,10 +24,10 @@
         <div v-if="message" :class="['message', messageType]">{{ message }}</div>
         <div class="switch-form">
           Don't have an account?
-          <router-link to="/register">Register here</router-link>
+          <router-link to="/student/register">Register here</router-link>
         </div>
         <div class="switch-form-alt">
-          <router-link to="/student/login">Student Login</router-link>
+          <router-link to="/">Staff Login</router-link>
         </div>
       </div>
     </div>
@@ -53,7 +53,7 @@ const handleLogin = async () => {
     const response = await apiLogin({
       username: username.value,
       password: password.value,
-      context: 'staff' // Specify context for staff login
+      context: 'student' // Specify context for student login
     })
 
     message.value = response.data.message
@@ -73,7 +73,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* Styles are copied from the original LoginView.vue for consistency */
+/* Styles are copied from LoginView.vue for consistency, with an added style for the alternate link */
 .auth-split-container {
   display: flex;
   min-height: 100vh;

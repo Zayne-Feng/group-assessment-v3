@@ -48,7 +48,8 @@
               </td>
               <td class="action-buttons" v-if="authStore.isAdmin">
                 <button @click="openEditModal(user)" class="btn-secondary btn-sm">Edit</button>
-                <button @click="deleteUser(user.id!)" class="btn-danger btn-sm">Delete</button>
+                <button @click="openResetPasswordModal(user)" class="btn-warning btn-sm">Reset Password</button>
+                <button @click="handleDeleteUser(user.id!)" class="btn-danger btn-sm">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -82,7 +83,7 @@
               <option value="admin">Admin</option>
               <option value="course_director">Course Director</option>
               <option value="wellbeing_officer">Wellbeing Officer</option>
-              <option value="user">User</option>
+              <option value="student">Student</option>
             </select>
           </div>
           <div class="form-group-checkbox">
@@ -97,13 +98,31 @@
         <div v-if="message" :class="['message', messageType]">{{ message }}</div>
       </div>
     </div>
+
+    <!-- Reset Password Modal -->
+    <div v-if="showResetPasswordModal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Reset Password for {{ currentUser.username }}</h2>
+        <form @submit.prevent="handleResetPassword" class="modal-form">
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input id="newPassword" type="password" v-model="newPassword" required>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Save New Password</button>
+            <button type="button" @click="closeResetPasswordModal" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+        <div v-if="message" :class="['message', messageType]">{{ message }}</div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getUsers, addUser, updateUser, deleteUser, type User } from '@/api/userService'
+import { getUsers, addUser, updateUser, deleteUser, resetUserPassword, type User } from '@/api/userService'
 
 const authStore = useAuthStore()
 
@@ -115,7 +134,7 @@ const messageType = ref<'success' | 'error' | ''>('')
 // Filtering and Searching
 const searchQuery = ref('')
 const selectedRole = ref('')
-const selectedStatus = ref('') // 'active', 'inactive', or '' for all
+const selectedStatus = ref('')
 
 // Sorting
 const sortKey = ref<keyof User>('username')
@@ -125,7 +144,7 @@ const sortOrder = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
-// Computed properties for interactivity
+// Computed properties
 const uniqueRoles = computed(() => {
   const roles = allUsers.value.map(u => u.role).filter(Boolean) as string[]
   return [...new Set(roles)]
@@ -133,34 +152,22 @@ const uniqueRoles = computed(() => {
 
 const filteredAndSortedUsers = computed(() => {
   let users = [...allUsers.value]
-
-  // Filter by search query
   if (searchQuery.value) {
     const lowerQuery = searchQuery.value.toLowerCase()
-    users = users.filter(u =>
-      u.username.toLowerCase().includes(lowerQuery) ||
-      u.role.toLowerCase().includes(lowerQuery)
-    )
+    users = users.filter(u => u.username.toLowerCase().includes(lowerQuery) || u.role.toLowerCase().includes(lowerQuery))
   }
-
-  // Filter by role
   if (selectedRole.value) {
     users = users.filter(u => u.role === selectedRole.value)
   }
-
-  // Filter by status
   if (selectedStatus.value === 'active') {
     users = users.filter(u => u.is_active)
   } else if (selectedStatus.value === 'inactive') {
     users = users.filter(u => !u.is_active)
   }
-
-  // Sort
   users.sort((a, b) => {
     const valA = a[sortKey.value]
     const valB = b[sortKey.value]
     if (valA === undefined || valB === undefined) return 0
-
     let comparison = 0;
     if (typeof valA === 'string' && typeof valB === 'string') {
       comparison = valA.localeCompare(valB);
@@ -171,13 +178,10 @@ const filteredAndSortedUsers = computed(() => {
     }
     return sortOrder.value === 'asc' ? comparison : -comparison;
   })
-
   return users
 })
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredAndSortedUsers.value.length / itemsPerPage.value)
-})
+const totalPages = computed(() => Math.ceil(filteredAndSortedUsers.value.length / itemsPerPage.value))
 
 const paginatedUsers = computed(() => {
   if (totalPages.value > 0 && currentPage.value > totalPages.value) {
@@ -207,26 +211,17 @@ const sortBy = (key: keyof User) => {
   }
 }
 
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-  }
-}
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
-
-// Modal logic
+// Modal logic for Add/Edit User
 const showModal = ref(false)
 const isEditMode = ref(false)
-const currentUser = ref<Partial<User>>({ username: '', password: '', role: 'user', is_active: true })
+const currentUser = ref<Partial<User>>({ username: '', password: '', role: 'student', is_active: true })
 
 const openAddModal = () => {
   isEditMode.value = false
-  currentUser.value = { username: '', password: '', role: 'user', is_active: true }
+  currentUser.value = { username: '', password: '', role: 'student', is_active: true }
   showModal.value = true
 }
 
@@ -239,27 +234,24 @@ const openEditModal = (user: User) => {
 const closeModal = () => {
   showModal.value = false
   message.value = ''
-  messageType.value = ''
 }
 
 const saveUser = async () => {
   message.value = ''
-  messageType.value = ''
   try {
     if (isEditMode.value && currentUser.value.id) {
       await updateUser(currentUser.value.id, currentUser.value)
       message.value = 'User updated successfully!'
-      messageType.value = 'success'
     } else {
       if (!currentUser.value.password) {
         message.value = 'Password is required for new users.'
         messageType.value = 'error'
         return
       }
-      await addUser(currentUser.value as User) // Cast to User as password is required for new user
+      await addUser(currentUser.value as User)
       message.value = 'User added successfully!'
-      messageType.value = 'success'
     }
+    messageType.value = 'success'
     await fetchUsers()
     closeModal()
   } catch (error: any) {
@@ -269,7 +261,41 @@ const saveUser = async () => {
   }
 }
 
-const deleteUser = async (id: number) => {
+// Modal logic for Reset Password
+const showResetPasswordModal = ref(false)
+const newPassword = ref('')
+
+const openResetPasswordModal = (user: User) => {
+  currentUser.value = { ...user } // Store the user whose password is being reset
+  newPassword.value = ''
+  showResetPasswordModal.value = true
+}
+
+const closeResetPasswordModal = () => {
+  showResetPasswordModal.value = false
+  message.value = ''
+}
+
+const handleResetPassword = async () => {
+  if (!currentUser.value.id || !newPassword.value) {
+    message.value = 'User ID is missing or new password is empty.'
+    messageType.value = 'error'
+    return
+  }
+  message.value = ''
+  try {
+    await resetUserPassword(currentUser.value.id, newPassword.value)
+    message.value = 'Password reset successfully!'
+    messageType.value = 'success'
+    closeResetPasswordModal()
+  } catch (error: any) {
+    console.error('Failed to reset password:', error)
+    message.value = error.response?.data?.message || 'Failed to reset password.'
+    messageType.value = 'error'
+  }
+}
+
+const handleDeleteUser = async (id: number) => {
   if (confirm('Are you sure you want to delete this user? (Logical Delete)')) {
     try {
       await deleteUser(id)
@@ -288,6 +314,16 @@ onMounted(fetchUsers)
 </script>
 
 <style scoped>
+/* Styles remain the same, but adding a warning button style */
+.btn-warning {
+  background-color: #f59e0b; /* Amber */
+  color: white;
+  border: none;
+}
+.btn-warning:hover {
+  background-color: #d97706;
+}
+
 /* Reusing StudentsView.vue styles for consistency */
 .page-header {
   display: flex;
@@ -436,7 +472,7 @@ tbody tr:last-child {
   background-color: #ef4444; /* Red */
 }
 
-/* Modal Specific Styles (from SubmissionsView.vue, adapted) */
+/* Modal Specific Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -452,7 +488,7 @@ tbody tr:last-child {
 
 .modal-content {
   width: 90%;
-  max-width: 500px; /* Adjusted width for User modal */
+  max-width: 500px;
   background-color: var(--color-background);
   padding: 2rem 2.5rem;
   border-radius: 12px;
@@ -464,12 +500,6 @@ tbody tr:last-child {
   margin-bottom: 2rem;
   color: var(--color-heading);
   font-size: 1.8rem;
-}
-
-.modal-form .form-grid {
-  display: grid;
-  grid-template-columns: 1fr; /* Single column for user form */
-  gap: 1.5rem;
 }
 
 .modal-form .form-group {

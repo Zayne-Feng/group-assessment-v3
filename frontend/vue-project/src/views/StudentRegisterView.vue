@@ -3,31 +3,36 @@
     <div class="left-panel">
       <div class="overlay-content">
         <h1>Student Wellbeing</h1>
-        <p>Monitoring academic and personal wellness</p>
+        <p>Create your account to get started.</p>
       </div>
     </div>
     <div class="right-panel">
       <div class="form-wrapper">
-        <h2>Staff Login</h2>
-        <p class="subtitle">Welcome back, please enter your details.</p>
-        <form @submit.prevent="handleLogin">
+        <h2>Student Registration</h2>
+        <p class="subtitle">Fill in the details below to create your account.</p>
+        <form @submit.prevent="handleRegister">
           <div class="form-group">
-            <label for="username">Username</label>
-            <input id="username" type="text" v-model="username" required placeholder="Enter your username">
+            <label for="student_number">Student Number</label>
+            <input id="student_number" type="text" v-model="studentNumber" required placeholder="Enter your student number">
+          </div>
+          <div class="form-group">
+            <label for="full_name">Full Name</label>
+            <input id="full_name" type="text" v-model="fullName" required placeholder="Enter your full name">
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" v-model="email" required placeholder="Enter your email address">
           </div>
           <div class="form-group">
             <label for="password">Password</label>
-            <input id="password" type="password" v-model="password" required placeholder="Enter your password">
+            <input id="password" type="password" v-model="password" required placeholder="Create a strong password">
           </div>
-          <button type="submit" class="btn-submit">Sign In</button>
+          <button type="submit" class="btn-submit">Register</button>
         </form>
         <div v-if="message" :class="['message', messageType]">{{ message }}</div>
         <div class="switch-form">
-          Don't have an account?
-          <router-link to="/register">Register here</router-link>
-        </div>
-        <div class="switch-form-alt">
-          <router-link to="/student/login">Student Login</router-link>
+          Already have an account?
+          <router-link to="/student/login">Login here</router-link>
         </div>
       </div>
     </div>
@@ -36,35 +41,33 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { login as apiLogin } from '@/api/authService'
+import { RouterLink, useRouter } from 'vue-router'
+import { registerStudent as apiRegisterStudent } from '@/api/authService'
 
-const username = ref('')
+const studentNumber = ref('')
+const fullName = ref('')
+const email = ref('')
 const password = ref('')
 const message = ref('')
 const messageType = ref<'success' | 'error' | ''>('')
-const authStore = useAuthStore()
+const router = useRouter()
 
-const handleLogin = async () => {
+const handleRegister = async () => {
   message.value = ''
   messageType.value = ''
   try {
-    const response = await apiLogin({
-      username: username.value,
-      password: password.value,
-      context: 'staff' // Specify context for staff login
+    const response = await apiRegisterStudent({
+      student_number: studentNumber.value,
+      full_name: fullName.value,
+      email: email.value,
+      username: email.value, // Assuming username is the email
+      password: password.value
     })
-
     message.value = response.data.message
     messageType.value = 'success'
-    authStore.setToken(response.data.access_token)
-    authStore.setUserRole(response.data.user_role)
-
     setTimeout(() => {
-      window.location.href = '/dashboard'
-    }, 100);
-
+      router.push('/student/login')
+    }, 1500)
   } catch (error: any) {
     message.value = error.response?.data?.message || 'An unexpected error occurred.'
     messageType.value = 'error'
@@ -73,7 +76,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-/* Styles are copied from the original LoginView.vue for consistency */
+/* Styles are copied from RegisterView.vue for consistency */
 .auth-split-container {
   display: flex;
   min-height: 100vh;
@@ -227,21 +230,6 @@ const handleLogin = async () => {
 }
 
 .switch-form a:hover {
-  text-decoration: underline;
-}
-
-.switch-form-alt {
-  text-align: center;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-}
-
-.switch-form-alt a {
-  color: var(--color-text-light);
-  text-decoration: none;
-}
-
-.switch-form-alt a:hover {
   text-decoration: underline;
 }
 </style>
