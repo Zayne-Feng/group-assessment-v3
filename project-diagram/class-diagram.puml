@@ -1,0 +1,292 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam classDividerColor black
+skinparam classFontStyle bold
+title Full System UML Class Diagram
+
+' ======================================================
+' MODELS
+' ======================================================
+package "Models" {
+
+class BaseModel {
+  +id : int
+  +created_at : datetime
+  +is_active : bool
+}
+
+class Student {
+  +student_number : string
+  +full_name : string
+  +email : string
+  +course_name : string
+  +year_of_study : int
+}
+
+class Module {
+  +module_code : string
+  +module_title : string
+  +credit : int
+  +academic_year : string
+}
+
+class SurveyResponse {
+  +student_id : int
+  +module_id : int
+  +week_number : int
+  +stress_level : int
+  +hours_slept : float
+  +mood_comment : string
+}
+
+class StressEvent {
+  +student_id : int
+  +module_id : int
+  +survey_response_id : int
+  +week_number : int
+  +stress_level : int
+  +cause_category : string
+  +description : string
+  +source : string
+}
+
+class SubmissionRecord {
+  +student_id : int
+  +module_id : int
+  +assessment_name : string
+  +due_date : date
+  +submitted_date : date
+  +is_submitted : bool
+  +is_late : bool
+}
+
+class Grade {
+  +student_id : int
+  +module_id : int
+  +assessment_name : string
+  +grade : float
+}
+
+class AttendanceRecord {
+  +student_id : int
+  +module_id : int
+  +week_number : int
+  +attended_sessions : int
+  +total_sessions : int
+  +attendance_rate : float
+}
+
+class Enrolment {
+  +student_id : int
+  +module_id : int
+  +enrol_date : date
+}
+
+class Alert {
+  +student_id : int
+  +module_id : int
+  +week_number : int
+  +reason : string
+  +resolved : bool
+}
+
+class User {
+  +username : string
+  +password_hash : string
+  +role : string
+  +student_id : int
+  --
+  +set_password()
+  +check_password()
+}
+
+}
+
+' Inheritance
+BaseModel <|-- Student
+BaseModel <|-- Module
+BaseModel <|-- SurveyResponse
+BaseModel <|-- StressEvent
+BaseModel <|-- SubmissionRecord
+BaseModel <|-- Grade
+BaseModel <|-- AttendanceRecord
+BaseModel <|-- Enrolment
+BaseModel <|-- Alert
+BaseModel <|-- User
+
+
+' ======================================================
+' REPOSITORIES
+' ======================================================
+package "Repositories" {
+
+class BaseRepository {
+  +get_by_id(id : int)
+  +get_all()
+  +delete_logical(id : int)
+  +delete_hard(id : int)
+}
+
+class StudentRepository {
+  +create_student()
+  +get_student_by_id()
+  +get_student_by_student_number()
+  +get_all_students()
+  +update_student()
+  +delete_student()
+  +delete_student_hard()
+  +get_student_enrolments()
+}
+
+class ModuleRepository {
+  +create_module()
+  +get_module_by_id()
+  +get_all_modules()
+  +update_module()
+  +delete_module()
+}
+
+class SurveyResponseRepository {
+  +create_survey_response()
+  +get_survey_response_by_id()
+  +get_survey_responses_by_student_id()
+  +get_all_survey_responses()
+  +update_survey_response()
+  +delete_survey_response()
+  +_check_for_stress_events_and_alerts()
+}
+
+class StressEventRepository {
+  +create_stress_event()
+  +get_stress_event_by_id()
+  +get_stress_events_by_student_id()
+  +get_all_stress_events()
+  +update_stress_event()
+  +delete_stress_event()
+}
+
+class SubmissionRecordRepository {
+  +create_submission_record()
+  +get_submission_record_by_id()
+  +get_submission_records_by_student_id()
+  +get_all_submission_records()
+  +update_submission_record()
+  +delete_submission_record()
+}
+
+class GradeRepository {
+  +create_grade()
+  +get_grade_by_id()
+  +get_grades_by_student_id()
+  +get_all_grades()
+  +update_grade()
+  +delete_grade()
+}
+
+class AttendanceRecordRepository {
+  +create_attendance_record()
+  +get_attendance_record_by_id()
+  +get_attendance_records_by_student_id()
+  +get_all_attendance_records()
+  +update_attendance_record()
+  +delete_attendance_record()
+}
+
+class EnrolmentRepository {
+  +create_enrolment()
+  +get_enrolment_by_id()
+  +get_all_enrolments()
+  +update_enrolment()
+  +delete_enrolment()
+}
+
+class AlertRepository {
+  +create_alert()
+  +get_alert_by_id()
+  +get_alerts_by_student_id()
+  +get_all_alerts()
+  +mark_alert_resolved()
+  +delete_alert()
+}
+
+class UserRepository {
+  +create_user()
+  +get_user_by_id()
+  +get_user_by_username()
+  +get_all_users()
+  +update_user()
+  +delete_user()
+}
+
+class AnalysisRepository {
+  +get_high_risk_students()
+  +get_stress_level_trend_for_student()
+  +get_attendance_trend_for_student()
+  +get_dashboard_summary()
+  +get_grade_distribution()
+  +get_overall_attendance_rate()
+  +get_submission_status_distribution()
+}
+
+}
+
+' Repository Inheritance
+BaseRepository <|-- StudentRepository
+BaseRepository <|-- ModuleRepository
+BaseRepository <|-- SurveyResponseRepository
+BaseRepository <|-- StressEventRepository
+BaseRepository <|-- SubmissionRecordRepository
+BaseRepository <|-- GradeRepository
+BaseRepository <|-- AttendanceRecordRepository
+BaseRepository <|-- EnrolmentRepository
+BaseRepository <|-- AlertRepository
+BaseRepository <|-- UserRepository
+BaseRepository <|-- AnalysisRepository
+
+
+' Repository → Model Dependency
+StudentRepository --> Student
+ModuleRepository --> Module
+SurveyResponseRepository --> SurveyResponse
+StressEventRepository --> StressEvent
+SubmissionRecordRepository --> SubmissionRecord
+GradeRepository --> Grade
+AttendanceRecordRepository --> AttendanceRecord
+EnrolmentRepository --> Enrolment
+AlertRepository --> Alert
+UserRepository --> User
+
+AnalysisRepository --> Student
+AnalysisRepository --> Module
+AnalysisRepository --> SurveyResponse
+AnalysisRepository --> StressEvent
+AnalysisRepository --> Alert
+AnalysisRepository --> SubmissionRecord
+AnalysisRepository --> Grade
+AnalysisRepository --> AttendanceRecord
+
+
+' ======================================================
+' MODEL RELATIONSHIPS (with multiplicity)
+' ======================================================
+Student "1" -- "0..*" SurveyResponse : answers
+Student "1" -- "0..*" StressEvent : experiences
+Student "1" -- "0..*" Alert : receives
+Student "1" -- "0..*" SubmissionRecord
+Student "1" -- "0..*" AttendanceRecord
+Student "1" -- "0..*" Grade
+
+Student "1" -- "0..*" Enrolment : enrols
+
+Module "1" -- "0..*" SurveyResponse
+Module "1" -- "0..*" StressEvent
+Module "1" -- "0..*" Alert
+Module "1" -- "0..*" SubmissionRecord
+Module "1" -- "0..*" AttendanceRecord
+Module "1" -- "0..*" Grade
+Module "1" -- "0..*" Enrolment
+
+SurveyResponse "1" --> "0..1" StressEvent : may_trigger
+
+@enduml

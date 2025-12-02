@@ -1,0 +1,129 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+hide circle
+hide stereotype
+
+title Database ER Diagram
+
+entity User {
+  *id : int
+  username : string
+  password_hash : string
+  role : string
+  student_id : int
+}
+
+entity Student {
+  *id : int
+  student_number : string
+  full_name : string
+  email : string
+  course_name : string
+  year_of_study : int
+}
+
+entity Module {
+  *id : int
+  module_code : string
+  module_title : string
+  credit : int
+  academic_year : string
+}
+
+entity Enrolment {
+  *id : int
+  student_id : int
+  module_id : int
+  enrol_date : date
+}
+
+entity SurveyResponse {
+  *id : int
+  student_id : int
+  module_id : int
+  week_number : int
+  stress_level : int
+  hours_slept : float
+  mood_comment : string
+}
+
+entity StressEvent {
+  *id : int
+  student_id : int
+  module_id : int
+  survey_response_id : int
+  week_number : int
+  stress_level : int
+  cause_category : string
+  description : string
+  source : string
+}
+
+entity Alert {
+  *id : int
+  student_id : int
+  module_id : int
+  week_number : int
+  reason : string
+  resolved : bool
+}
+
+entity SubmissionRecord {
+  *id : int
+  student_id : int
+  module_id : int
+  assessment_name : string
+  due_date : date
+  submitted_date : date
+  is_submitted : bool
+  is_late : bool
+}
+
+entity AttendanceRecord {
+  *id : int
+  student_id : int
+  module_id : int
+  week_number : int
+  attended_sessions : int
+  total_sessions : int
+  attendance_rate : float
+}
+
+entity Grade {
+  *id : int
+  student_id : int
+  module_id : int
+  assessment_name : string
+  grade : float
+}
+
+' ============================================
+' RELATIONSHIPS (clean layout)
+' ============================================
+
+User |o--o| Student : optional >
+
+Student ||--o{ Enrolment : enrolls >
+Module  ||--o{ Enrolment : includes >
+
+Student ||--o{ SurveyResponse : answers >
+Module  ||--o{ SurveyResponse
+
+Student ||--o{ StressEvent : experiences >
+Module  ||--o{ StressEvent
+SurveyResponse |o--|| StressEvent : may_trigger >
+
+Student ||--o{ SubmissionRecord
+Module  ||--o{ SubmissionRecord
+
+Student ||--o{ AttendanceRecord
+Module  ||--o{ AttendanceRecord
+
+Student ||--o{ Grade
+Module  ||--o{ Grade
+
+Student ||--o{ Alert : receives >
+Module  ||--o{ Alert
+
+@enduml
