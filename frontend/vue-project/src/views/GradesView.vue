@@ -36,7 +36,7 @@
               <td>{{ grade.student_name }}</td>
               <td>{{ grade.module_title }}</td>
               <td>{{ grade.assessment_name }}</td>
-              <td>{{ grade.grade }}</td>
+              <td>{{ Math.round(grade.grade) }}</td>
               <td class="action-buttons" v-if="authStore.isAdmin">
                 <button @click="openEditModal(grade)" class="btn-secondary btn-sm">Edit</button>
                 <button @click="deleteGrade(grade.id!)" class="btn-danger btn-sm">Delete</button>

@@ -37,7 +37,7 @@
               <td>{{ response.module_title }}</td>
               <td>{{ response.week_number }}</td>
               <td>{{ response.stress_level }}</td>
-              <td>{{ response.hours_slept }}</td>
+              <td>{{ response.hours_slept.toFixed(1) }}</td>
               <td>{{ response.mood_comment }}</td>
               <td class="action-buttons">
                 <button @click="openEditModal(response)" class="btn-secondary btn-sm">Edit</button>
