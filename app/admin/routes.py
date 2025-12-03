@@ -363,20 +363,15 @@ def handle_user(user_id):
             existing = user_repository.get_user_by_id(user_id)
             if not existing: return jsonify({'message': 'User not found'}), 404
             
-            # Merge existing data with new data.
+            # Merge incoming data with existing data to handle partial updates
             update_data = existing.to_dict()
             update_data.update(data)
-            
-            # Remove fields that are not expected by the repository's update method.
-            update_data.pop('id', None)
-            update_data.pop('is_active', None)
-            update_data.pop('created_at', None) 
 
             updated = user_repository.update_user(
                 user_id, 
-                username=update_data['username'], 
-                role=update_data['role'], 
-                is_active=update_data['is_active']
+                username=update_data.get('username', existing.username), 
+                role=update_data.get('role', existing.role), 
+                is_active=update_data.get('is_active', existing.is_active)
             )
             return jsonify({'message': 'User updated successfully'}), 200
         except Exception as e:

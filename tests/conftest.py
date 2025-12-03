@@ -40,6 +40,6 @@ def init_database(runner):
     result = runner.invoke(args=['init-db'])
     
     # Check if the command executed successfully
-    assert 'Initialized the database.' in result.output
+    assert 'Database initialized and seeded successfully.' in result.output
     
     yield # The tests will run after this point

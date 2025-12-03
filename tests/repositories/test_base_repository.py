@@ -69,57 +69,37 @@ def test_execute_query_no_results(app):
         result = repo._execute_query("SELECT id FROM users WHERE id = 999999", fetch_one=True)
         assert result is None
 
-def test_execute_insert_rollback(app, mocker):
+def test_execute_insert_raises_exception_on_error(app, mocker):
     """
-    Tests that _execute_insert rolls back on error.
+    Tests that _execute_insert correctly raises an exception on a database error.
     """
     with app.app_context():
-        # Create explicit mock objects for connection methods
-        mock_cursor = mocker.Mock()
-        mock_execute = mocker.Mock(return_value=mock_cursor, side_effect=sqlite3.Error("Test error"))
-        mock_rollback = mocker.Mock()
-        mock_commit = mocker.Mock()
+        # Create a mock connection object
+        mock_conn = mocker.MagicMock()
+        mock_conn.execute.side_effect = sqlite3.Error("Test DB Error")
         
-        mock_conn = mocker.Mock()
-        mock_conn.execute = mock_execute
-        mock_conn.rollback = mock_rollback
-        mock_conn.commit = mock_commit
-        
-        # Patch sqlite3.connect directly
-        mocker.patch('app.db_connection.sqlite3.connect', return_value=mock_conn)
-        
+        # Patch get_db to return our mock connection
+        mocker.patch('app.repositories.base_repository.get_db', return_value=mock_conn)
+
         repo = BaseRepository('test_table', None)
         with pytest.raises(Exception, match="Failed to insert into test_table."):
             repo._execute_insert("INSERT INTO test_table VALUES (?)", (1,))
-        
-        mock_rollback.assert_called_once()
-        mock_commit.assert_not_called()
 
-def test_execute_update_delete_rollback(app, mocker):
+def test_execute_update_delete_raises_exception_on_error(app, mocker):
     """
-    Tests that _execute_update_delete rolls back on error.
+    Tests that _execute_update_delete correctly raises an exception on a database error.
     """
     with app.app_context():
-        # Create explicit mock objects for connection methods
-        mock_cursor = mocker.Mock()
-        mock_execute = mocker.Mock(return_value=mock_cursor, side_effect=sqlite3.Error("Test error"))
-        mock_rollback = mocker.Mock()
-        mock_commit = mocker.Mock()
-        
-        mock_conn = mocker.Mock()
-        mock_conn.execute = mock_execute
-        mock_conn.rollback = mock_rollback
-        mock_conn.commit = mock_commit
-        
-        # Patch sqlite3.connect directly
-        mocker.patch('app.db_connection.sqlite3.connect', return_value=mock_conn)
+        # Create a mock connection object
+        mock_conn = mocker.MagicMock()
+        mock_conn.execute.side_effect = sqlite3.Error("Test DB Error")
+
+        # Patch get_db to return our mock connection
+        mocker.patch('app.repositories.base_repository.get_db', return_value=mock_conn)
         
         repo = BaseRepository('test_table', None)
         with pytest.raises(Exception, match="Failed to update/delete from test_table."):
-            repo._execute_update_delete("UPDATE test_table SET col = ? WHERE id = ?", (1, 1))
-        
-        mock_rollback.assert_called_once()
-        mock_commit.assert_not_called()
+            repo._execute_update_delete("UPDATE test_table SET col=1", ())
 
 def test_delete_hard(app):
     """
@@ -134,7 +114,10 @@ def test_delete_hard(app):
         db.commit()
 
         repo = BaseRepository('users', User)
+        # We need to manually commit since the repo no longer does it.
         delete_success = repo.delete_hard(user_id)
+        db.commit() 
+        
         assert delete_success is True
 
         # Verify it's completely gone

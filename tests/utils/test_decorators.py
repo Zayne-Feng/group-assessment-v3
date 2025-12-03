@@ -9,17 +9,19 @@ import pytest
 import json
 from flask import jsonify
 from app.utils.decorators import role_required
-from flask_jwt_extended import create_access_token # For creating custom tokens in tests
+from flask_jwt_extended import create_access_token
 
-def test_role_required_with_single_role(app, client):
-    """
-    Tests the `role_required` decorator with a single role string.
+# --- Test Setup: Define dummy endpoints outside of test functions ---
 
-    Verifies that:
-    - A user with the required role can access the endpoint (200 OK).
-    - A user with a different role is forbidden (403 Forbidden).
-    """
-    # Dynamically create a dummy endpoint protected by a single role.
+# This flag ensures that the test routes are added only once.
+_test_routes_added = False
+
+def add_test_routes(app):
+    """A helper function to add test routes to the app if they haven't been added yet."""
+    global _test_routes_added
+    if _test_routes_added:
+        return
+
     @app.route('/admin-only')
     @role_required('admin')
     def admin_only_endpoint():
@@ -29,6 +31,31 @@ def test_role_required_with_single_role(app, client):
     @role_required('user')
     def user_only_endpoint():
         return jsonify(message="Welcome User!"), 200
+
+    @app.route('/staff-only')
+    @role_required(['admin', 'course_director'])
+    def staff_only_endpoint():
+        return jsonify(message="Welcome Staff!"), 200
+        
+    @app.route('/protected')
+    @role_required('any_role') # The role doesn't matter here, just that it's protected.
+    def protected_endpoint():
+        return jsonify(message="Should not see this"), 200
+
+    _test_routes_added = True
+
+
+# --- Tests ---
+
+def test_role_required_with_single_role(app, client):
+    """
+    Tests the `role_required` decorator with a single role string.
+
+    Verifies that:
+    - A user with the required role can access the endpoint (200 OK).
+    - A user with a different role is forbidden (403 Forbidden).
+    """
+    add_test_routes(app) # Ensure test routes are added
 
     # Obtain an admin token for testing.
     credentials = {'username': 'admin', 'password': 'admin', 'context': 'staff'}
@@ -73,10 +100,7 @@ def test_role_required_with_multiple_roles(app, client):
     - Users with any of the required roles can access the endpoint (200 OK).
     - Users with other roles are forbidden (403 Forbidden).
     """
-    @app.route('/staff-only')
-    @role_required(['admin', 'course_director'])
-    def staff_only_endpoint():
-        return jsonify(message="Welcome Staff!"), 200
+    add_test_routes(app) # Ensure test routes are added
 
     # Obtain admin token.
     credentials_admin = {'username': 'admin', 'password': 'admin', 'context': 'staff'}
@@ -113,16 +137,14 @@ def test_role_required_with_multiple_roles(app, client):
     assert response.status_code == 403
     assert 'Access forbidden' in json.loads(response.data)['msg']
 
-def test_role_required_no_token(client):
+def test_role_required_no_token(app, client):
     """
     Tests that accessing a role-protected endpoint without any JWT token
     returns 401 Unauthorized (handled by Flask-JWT-Extended).
     """
-    @client.application.route('/protected')
-    @role_required('admin')
-    def protected_endpoint():
-        return jsonify(message="Should not see this"), 200
+    add_test_routes(app) # Ensure test routes are added
 
     response = client.get('/protected')
     assert response.status_code == 401
-    assert 'Missing JWT' in json.loads(response.data)['msg']
+    # The exact message can vary with library versions, so checking for a key part is safer.
+    assert 'Missing' in response.get_json()['msg']

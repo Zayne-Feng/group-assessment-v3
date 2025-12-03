@@ -42,14 +42,14 @@ class SurveyResponse(BaseModel):
         self.hours_slept = hours_slept
         self.mood_comment = mood_comment
 
-    def to_dict() -> dict:
+    def to_dict(self) -> dict:
         """
         Converts the SurveyResponse object to a dictionary representation, including common base model fields.
 
         Returns:
             dict: A dictionary containing the survey response's attributes suitable for JSON serialization.
         """
-        data = super().to_dict() # Get common fields from BaseModel.
+        data = super(SurveyResponse, self).to_dict() # Get common fields from BaseModel.
         data.update({
             'student_id': self.student_id,
             'module_id': self.module_id,

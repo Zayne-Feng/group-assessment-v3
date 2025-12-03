@@ -32,9 +32,10 @@ def test_register_student_success(mocker):
     mocker.patch.object(student_repository, 'create_student', return_value=mock_student)
     mocker.patch.object(user_repository, 'create_user', return_value=mock_user)
     
-    # Mock the database commit method, as it's called within the service.
-    mocker.patch('app.db_connection.get_db').return_value.commit = mocker.MagicMock()
-    mocker.patch('app.db_connection.get_db').return_value.rollback = mocker.MagicMock() # Also mock rollback
+    # Mock the database connection where it is used (in the services module)
+    mock_db = mocker.patch('app.auth.services.get_db').return_value
+    mock_commit = mock_db.commit
+    mock_rollback = mock_db.rollback
 
     student, user = register_student('S12345', 'Test Student', 'test@example.com', 'password')
 
@@ -44,8 +45,8 @@ def test_register_student_success(mocker):
     assert user.username == 'test@example.com'
     assert user.student_id == student.id
     # Verify that commit was called and rollback was not.
-    mocker.patch('app.db_connection.get_db').return_value.commit.assert_called_once()
-    mocker.patch('app.db_connection.get_db').return_value.rollback.assert_not_called()
+    mock_commit.assert_called_once()
+    mock_rollback.assert_not_called()
 
 def test_register_student_existing_student_number(mocker):
     """
@@ -56,16 +57,17 @@ def test_register_student_existing_student_number(mocker):
     # Mock the student repository to simulate that the student number already exists.
     mocker.patch.object(student_repository, 'get_student_by_student_number', return_value=Student(id=1, student_number='S12345'))
     
-    # Mock db.rollback() as it would be called in the service's exception handler.
-    mocker.patch('app.db_connection.get_db').return_value.rollback = mocker.MagicMock()
-    mocker.patch('app.db_connection.get_db').return_value.commit = mocker.MagicMock()
+    # Mock the database connection where it is used (in the services module)
+    mock_db = mocker.patch('app.auth.services.get_db').return_value
+    mock_commit = mock_db.commit
+    mock_rollback = mock_db.rollback
 
     with pytest.raises(ValueError, match="Student number 'S12345' already exists."):
         register_student('S12345', 'Test Student', 'test@example.com', 'password')
     
     # Verify that rollback was called and commit was not.
-    mocker.patch('app.db_connection.get_db').return_value.rollback.assert_called_once()
-    mocker.patch('app.db_connection.get_db').return_value.commit.assert_not_called()
+    mock_rollback.assert_called_once()
+    mock_commit.assert_not_called()
 
 
 def test_register_student_existing_email(mocker):
@@ -78,13 +80,14 @@ def test_register_student_existing_email(mocker):
     mocker.patch.object(student_repository, 'get_student_by_student_number', return_value=None)
     mocker.patch.object(user_repository, 'get_user_by_username', return_value=User(id=1, username='test@example.com'))
 
-    # Mock db.rollback() as it would be called in the service's exception handler.
-    mocker.patch('app.db_connection.get_db').return_value.rollback = mocker.MagicMock()
-    mocker.patch('app.db_connection.get_db').return_value.commit = mocker.MagicMock()
+    # Mock the database connection where it is used (in the services module)
+    mock_db = mocker.patch('app.auth.services.get_db').return_value
+    mock_commit = mock_db.commit
+    mock_rollback = mock_db.rollback
 
     with pytest.raises(ValueError, match="Email 'test@example.com' is already registered."):
         register_student('S12345', 'Test Student', 'test@example.com', 'password')
     
     # Verify that rollback was called and commit was not.
-    mocker.patch('app.db_connection.get_db').return_value.rollback.assert_called_once()
-    mocker.patch('app.db_connection.get_db').return_value.commit.assert_not_called()
+    mock_rollback.assert_called_once()
+    mock_commit.assert_not_called()

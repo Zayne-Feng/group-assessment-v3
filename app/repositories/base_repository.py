@@ -94,10 +94,8 @@ class BaseRepository:
         db = get_db()
         try:
             cursor = db.execute(query, params)
-            db.commit() # Commit the transaction on successful insertion.
             return cursor.lastrowid
         except sqlite3.Error as e:
-            db.rollback() # Rollback the transaction to maintain data integrity.
             current_app.logger.error(f"Database error in {self.table_name} repository (insert): {e}", exc_info=True)
             raise Exception(f"Failed to insert into {self.table_name}.")
 
@@ -122,10 +120,8 @@ class BaseRepository:
         db = get_db()
         try:
             cursor = db.execute(query, params)
-            db.commit() # Commit the transaction on successful update/delete.
             return cursor.rowcount > 0 # Indicates if any row was affected by the operation.
         except sqlite3.Error as e:
-            db.rollback() # Rollback the transaction to maintain data integrity.
             current_app.logger.error(f"Database error in {self.table_name} repository (update/delete): {e}", exc_info=True)
             raise Exception(f"Failed to update/delete from {self.table_name}.")
 
