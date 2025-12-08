@@ -20,6 +20,8 @@ from app.repositories.submission_record_repository import submission_record_repo
 from app.repositories.grade_repository import grade_repository
 from flask_jwt_extended import jwt_required
 from app.utils.decorators import role_required
+from app.db_connection import get_db # Import get_db for transaction management
+import sqlite3 # Import sqlite3 for rollback in case of db error
 
 # region Module Endpoints
 @admin.route('/modules', methods=['GET', 'POST'])
@@ -51,10 +53,13 @@ def handle_modules():
             # Validate required fields for module creation.
             if not data or not all(k in data for k in ['module_code', 'module_title']):
                 return jsonify({'message': 'Missing required fields: module_code, module_title.'}), 400
+            db = get_db() # Get db connection for transaction
             try:
                 module = module_repository.create_module(**data)
+                db.commit() # Commit on success
                 return jsonify({'message': 'Module created successfully', 'id': module.id}), 201
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error creating module: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return create_module()
@@ -92,6 +97,7 @@ def handle_module(module_id):
             """Updates an existing module by ID."""
             data = request.get_json()
             if not data: return jsonify({'message': 'Request body is empty.'}), 400
+            db = get_db() # Get db connection for transaction
             try:
                 existing = module_repository.get_module_by_id(module_id)
                 if not existing: return jsonify({'message': 'Module not found'}), 404
@@ -106,8 +112,10 @@ def handle_module(module_id):
                 update_data.pop('created_at', None) 
 
                 updated = module_repository.update_module(module_id, **update_data)
+                db.commit() # Commit on success
                 return jsonify({'message': 'Module updated successfully'}), 200
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error updating module {module_id}: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return update_single_module(module_id)
@@ -116,11 +124,14 @@ def handle_module(module_id):
         @role_required('admin')
         def delete_single_module(module_id):
             """Logically deletes a module by ID."""
+            db = get_db() # Get db connection for transaction
             try:
                 if module_repository.delete_module(module_id):
+                    db.commit() # Commit on success
                     return jsonify({'message': 'Module deleted successfully'}), 200
                 return jsonify({'message': 'Module not found'}), 404
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error deleting module {module_id}: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return delete_single_module(module_id)
@@ -171,11 +182,14 @@ def resolve_alert(alert_id):
     Args:
         alert_id (int): The ID of the alert to resolve.
     """
+    db = get_db() # Get database connection for transaction
     try:
         if alert_repository.mark_alert_resolved(alert_id):
+            db.commit() # Explicitly commit the transaction
             return jsonify({'message': 'Alert marked as resolved'}), 200
         return jsonify({'message': 'Alert not found'}), 404
     except Exception as e:
+        db.rollback() # Rollback on error
         current_app.logger.error(f"Error resolving alert {alert_id}: {e}", exc_info=True)
         return jsonify({'message': 'An unexpected error occurred.'}), 500
 
@@ -190,11 +204,14 @@ def delete_alert_logical(alert_id):
     Args:
         alert_id (int): The ID of the alert to logically delete.
     """
+    db = get_db() # Get db connection for transaction
     try:
         if alert_repository.delete_alert(alert_id):
+            db.commit() # Commit on success
             return jsonify({'message': 'Alert deleted successfully'}), 200
         return jsonify({'message': 'Alert not found'}), 404
     except Exception as e:
+        db.rollback() # Rollback on error
         current_app.logger.error(f"Error deleting alert {alert_id}: {e}", exc_info=True)
         return jsonify({'message': 'An unexpected error occurred.'}), 500
 # endregion
@@ -228,10 +245,13 @@ def handle_students():
             data = request.get_json()
             if not data or not all(k in data for k in ['student_number', 'full_name']):
                 return jsonify({'message': 'Missing required fields: student_number, full_name.'}), 400
+            db = get_db() # Get db connection for transaction
             try:
                 student = student_repository.create_student(**data)
+                db.commit() # Commit on success
                 return jsonify({'message': 'Student created successfully', 'id': student.id}), 201
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error creating student: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return create_student()
@@ -268,6 +288,7 @@ def handle_student(student_id):
             """Updates an existing student by ID."""
             data = request.get_json()
             if not data: return jsonify({'message': 'Request body is empty.'}), 400
+            db = get_db() # Get db connection for transaction
             try:
                 existing = student_repository.get_student_by_id(student_id)
                 if not existing: return jsonify({'message': 'Student not found'}), 404
@@ -282,8 +303,10 @@ def handle_student(student_id):
                 update_data.pop('created_at', None) 
                 
                 updated = student_repository.update_student(student_id, **update_data)
+                db.commit() # Commit on success
                 return jsonify({'message': 'Student updated successfully'}), 200
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error updating student {student_id}: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return update_single_student(student_id)
@@ -292,11 +315,14 @@ def handle_student(student_id):
         @role_required('admin')
         def delete_single_student(student_id):
             """Logically deletes a student by ID."""
+            db = get_db() # Get db connection for transaction
             try:
                 if student_repository.delete_student(student_id):
+                    db.commit() # Commit on success
                     return jsonify({'message': 'Student deleted successfully'}), 200
                 return jsonify({'message': 'Student not found'}), 404
             except Exception as e:
+                db.rollback() # Rollback on error
                 current_app.logger.error(f"Error deleting student {student_id}: {e}", exc_info=True)
                 return jsonify({'message': 'An unexpected error occurred.'}), 500
         return delete_single_student(student_id)
@@ -326,10 +352,13 @@ def handle_users():
         # Validate required fields for user creation.
         if not data or not all(k in data for k in ['username', 'password', 'role']):
             return jsonify({'message': 'Missing required fields: username, password, role.'}), 400
+        db = get_db() # Get db connection for transaction
         try:
             user = user_repository.create_user(**data)
+            db.commit() # Commit on success
             return jsonify({'message': 'User created successfully', 'id': user.id}), 201
         except Exception as e:
+            db.rollback() # Rollback on error
             current_app.logger.error(f"Error creating user: {e}", exc_info=True)
             return jsonify({'message': 'An unexpected error occurred.'}), 500
 
@@ -359,6 +388,7 @@ def handle_user(user_id):
     elif request.method == 'PUT':
         data = request.get_json()
         if not data: return jsonify({'message': 'Request body is empty.'}), 400
+        db = get_db() # Get db connection for transaction
         try:
             existing = user_repository.get_user_by_id(user_id)
             if not existing: return jsonify({'message': 'User not found'}), 404
@@ -373,17 +403,21 @@ def handle_user(user_id):
                 role=update_data.get('role', existing.role), 
                 is_active=update_data.get('is_active', existing.is_active)
             )
+            db.commit() # Commit on success
             return jsonify({'message': 'User updated successfully'}), 200
         except Exception as e:
+            db.rollback() # Rollback on error
             current_app.logger.error(f"Error updating user {user_id}: {e}", exc_info=True)
             return jsonify({'message': 'An unexpected error occurred.'}), 500
 
     elif request.method == 'DELETE':
         try:
             if user_repository.delete_user(user_id):
+                db.commit() # Commit on success
                 return jsonify({'message': 'User deleted successfully'}), 200
             return jsonify({'message': 'User not found'}), 404
         except Exception as e:
+            db.rollback() # Rollback on error
             current_app.logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
             return jsonify({'message': 'An unexpected error occurred.'}), 500
 
@@ -402,11 +436,14 @@ def reset_user_password(user_id):
     new_password = data.get('new_password')
     if not new_password:
         return jsonify({'message': 'New password is required'}), 400
+    db = get_db() # Get db connection for transaction
     try:
         if user_repository.reset_password(user_id, new_password):
+            db.commit() # Commit on success
             return jsonify({'message': 'User password reset successfully'}), 200
         return jsonify({'message': 'User not found'}), 404
     except Exception as e:
+        db.rollback() # Rollback on error
         current_app.logger.error(f"Error resetting password for user {user_id}: {e}", exc_info=True)
         return jsonify({'message': 'An unexpected error occurred.'}), 500
 # endregion
@@ -453,14 +490,16 @@ def add_crud_routes(endpoint, repo, required_fields, roles):
             def create():
                 """Creates a new record for the entity."""
                 data = request.get_json()
-                # Validate required fields for creation.
                 if not data or not all(k in data for k in required_fields):
                     return jsonify({'message': f'Missing required fields for {endpoint}.'}), 400
+                db = get_db() # Get db connection for transaction
                 try:
                     create_method_name = f'create_{endpoint.replace("-", "_").rstrip("s")}'
                     record = getattr(repo, create_method_name)(**data)
+                    db.commit() # Commit on success
                     return jsonify({'message': f'{endpoint} created successfully', 'id': record.id}), 201
                 except Exception as e:
+                    db.rollback() # Rollback on error
                     current_app.logger.error(f"Error creating {endpoint}: {e}", exc_info=True)
                     return jsonify({'message': 'An unexpected error occurred.'}), 500
             return create()
@@ -493,6 +532,7 @@ def add_crud_routes(endpoint, repo, required_fields, roles):
                 """Updates an existing record by ID."""
                 data = request.get_json()
                 if not data: return jsonify({'message': 'Request body is empty.'}), 400
+                db = get_db() # Get db connection for transaction
                 try:
                     existing = getattr(repo, f'get_{endpoint.replace("-", "_").rstrip("s")}_by_id')(record_id)
                     if not existing: return jsonify({'message': f'{endpoint} not found'}), 404
@@ -536,9 +576,10 @@ def add_crud_routes(endpoint, repo, required_fields, roles):
 
                     # Call the update method with the prepared data.
                     updated_record = update_method(record_id, **update_data)
-                    
+                    db.commit() # Commit on success
                     return jsonify({'message': f'{endpoint} updated successfully'}), 200
                 except Exception as e:
+                    db.rollback() # Rollback on error
                     current_app.logger.error(f"Error updating {endpoint} {record_id}: {e}", exc_info=True)
                     return jsonify({'message': 'An unexpected error occurred.'}), 500
             return update_single(record_id)
@@ -546,13 +587,16 @@ def add_crud_routes(endpoint, repo, required_fields, roles):
             @role_required(roles.get('delete', 'admin'))
             def delete_single(record_id):
                 """Logically deletes a record by ID."""
+                db = get_db() # Get db connection for transaction
                 try:
                     # Determine whether to perform a hard delete (for alerts) or logical delete.
                     delete_method = getattr(repo, 'delete_hard' if endpoint == 'alerts' else 'delete_logical')
                     if delete_method(record_id):
+                        db.commit() # Commit on success
                         return jsonify({'message': f'{endpoint} deleted successfully'}), 200
                     return jsonify({'message': f'{endpoint} not found'}), 404
                 except Exception as e:
+                    db.rollback() # Rollback on error
                     current_app.logger.error(f"Error deleting {endpoint} {record_id}: {e}", exc_info=True)
                     return jsonify({'message': 'An unexpected error occurred.'}), 500
             return delete_single(record_id)

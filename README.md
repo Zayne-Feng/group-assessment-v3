@@ -1,172 +1,167 @@
-# 学生福祉监测系统 (Student Wellbeing Monitoring System)
+# Student Wellbeing & Academic Performance Monitoring System
 
-本项目是一个用于整合、分析和可视化学生的学习参与度与福祉数据的原型系统。它包含一个 Vue.js 前端和一个 Flask 后端，旨在帮助教育机构更好地理解和支持学生的整体健康与学业表现。
+This project is a prototype system designed to integrate, analyze, and visualize student engagement and wellbeing data. It features a Vue.js frontend and a Flask backend, aiming to empower educational institutions to better understand and support their students' overall health and academic success.
 
-## 技术栈
+## Table of Contents
 
-*   **后端**: Python, Flask, Flask-JWT-Extended, SQLite (直接操作 `sqlite3` 模块), Werkzeug, python-dotenv
-*   **前端**: Vue 3, TypeScript, Vite, Pinia, Axios
-*   **数据库**: SQLite (用于开发和测试环境，数据文件为 `data-dev.sqlite` / `data-test.sqlite`)
-*   **测试**: Pytest (后端), Vitest (前端单元测试), Playwright (前端 E2E 测试)
+- [System Overview](#system-overview)
+- [Features](#features)
+- [Technical Architecture](#technical-architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Local Development Setup](#local-development-setup)
+- [Running the Project](#running-the-project)
+- [Running Tests](#running-tests)
 
-## 环境准备
+## System Overview
 
-*   **Python**: 推荐版本 3.9+
-*   **Node.js**: 推荐版本 18+ (用于前端开发)
+The **Student Wellbeing & Academic Performance Monitoring System** is a modern Web API service built with Python and Flask. It addresses a core educational challenge: a student's success is determined not just by grades, but by a combination of factors including learning engagement, mental health, and overall wellbeing.
 
-## 项目结构
+By collecting and analyzing multi-dimensional data—such as academic grades, class attendance, assignment submissions, and self-reported stress levels—this system provides educational administrators (like Course Directors and Wellbeing Officers) with data-driven insights. The ultimate goal is to shift from a reactive to a **proactive support model**. The built-in intelligent analysis engine automatically identifies "at-risk" students, enabling staff to offer timely and targeted support, thereby enhancing the student experience and academic outcomes.
 
-本项目采用前后端分离的架构，主要目录和文件说明如下：
+## Features
 
-*   **`app/`**: Flask 后端的核心业务逻辑模块，包含：
-    *   `auth/`: 用户认证与授权相关逻辑。
-    *   `admin/`: 管理员功能（CRUD 操作）。
-    *   `analysis/`: 数据分析接口。
-    *   `student/`: 学生相关接口。
-    *   `models/`: 数据库模型定义。
-    *   `repositories/`: 数据库交互层（Repository 模式）。
-    *   `db_connection.py`: 数据库连接管理。
-    *   `utils/`: 应用内部工具函数（如权限装饰器）。
-*   **`frontend/vue-project/`**: Vue.js 前端应用程序的根目录，包含所有前端源代码和配置。
-*   **`app.py`**: Flask 后端应用程序的入口文件，用于创建 Flask 应用实例。
-*   **`config.py`**: 后端配置管理（开发、测试、生产环境）。
-*   **`manage.py`**: 后端管理脚本，包含数据库初始化、数据填充等 CLI 命令。
-*   **`tests/`**: 后端 Pytest 测试文件。
-*   **`utils/`**: 项目通用工具函数（如数据填充脚本 `seed_data.py`）。
-*   **`.venv/`**: Python 虚拟环境目录 (由 `python -m venv` 创建)。
-*   **`requirements.txt`**: 后端 Python 依赖列表。
-*   **`package.json`**: 前端 Node.js 依赖列表。
-*   **`data-dev.sqlite` / `data-test.sqlite`**: 开发/测试环境的 SQLite 数据库文件。
+### Backend (Flask API)
 
-## 主要功能
+-   **Unified Authentication & Authorization**: JWT-based user registration and login, with a fine-grained role-based access control (RBAC) system (`admin`, `course_director`, `wellbeing_officer`, `student`).
+-   **Comprehensive Data Management (CRUD)**: Full CRUD APIs for all core entities, including students, modules, users, enrolments, grades, attendance, submissions, survey responses, and alerts.
+-   **Intelligent Data Analysis**: Endpoints for a dashboard summary, grade distribution, stress-grade correlation, overall attendance rates, submission status distribution, and high-risk student identification.
+-   **Alerting System**: Manages and resolves system-generated alerts related to student wellbeing.
 
-### 后端 (Flask API)
+### Frontend (Vue.js App)
 
-*   **用户认证与授权**: 基于 JWT (JSON Web Tokens) 的用户注册、登录、登出及基于角色的权限管理 (`admin`, `course_director`, `wellbeing_officer`, `student`)。
-*   **数据管理 (CRUD)**: 为学生、模块、用户、选课、成绩、考勤记录、提交记录、调查问卷、压力事件和警报提供完整的 CRUD API。
-*   **数据分析**: 提供仪表盘摘要、成绩分布、压力-成绩关联、整体出勤率、提交状态分布、高风险学生识别等分析接口。
-*   **警报/通知系统**: 管理和解析学生福祉警报。
+-   **Intuitive User Interface**: Presents backend data through a user-friendly interface.
+-   **Data Visualization**: Utilizes charts and graphs to display analytical data, turning numbers into insights.
+-   **Interactive Experience**: Handles user input and actions, communicating with the backend API via Axios.
+-   **State Management**: Uses Pinia for robust and centralized application state management.
+-   **Client-Side Routing**: Employs Vue Router for seamless navigation and view rendering.
 
-### 前端 (Vue.js 应用)
+## Technical Architecture
 
-*   **直观的用户界面**: 展示后端数据，提供友好的用户操作界面。
-*   **数据可视化**: 可能包含图表和图形，用于展示分析数据。
-*   **用户交互**: 处理用户输入，响应用户操作，通过 Axios 与后端 API 交互。
-*   **状态管理**: 使用 Pinia 进行应用状态管理。
-*   **路由管理**: 使用 Vue Router 进行页面导航和视图展示。
+The project adheres to modern software engineering best practices, featuring a clean, robust, and highly scalable architecture.
 
-## 本地开发环境搭建
+-   **Layered Architecture**:
+    -   **Presentation Layer (Routes)**: Handles HTTP requests and validation.
+    -   **Business Logic Layer (Services)**: Encapsulates core business logic and manages transaction boundaries.
+    -   **Data Access Layer (Repositories)**: Implements the Repository Pattern, decoupling database operations from business logic.
+-   **Application Factory Pattern**: Uses the `create_app()` function to instantiate and configure the Flask application, simplifying testing and environment management.
+-   **Modular Design**: Leverages Flask Blueprints to separate different functional domains (`auth`, `admin`, `analysis`), reducing coupling and improving maintainability.
+-   **Aspect-Oriented Programming (AOP)**: Employs custom decorators (`@role_required`) to cleanly separate cross-cutting concerns like authorization from business logic.
+-   **Test-Driven Development (TDD)**: Includes a comprehensive test suite covering models, repositories, services, and APIs, ensuring code quality and correctness.
 
-### 1. 克隆项目
+## Tech Stack
+
+-   **Backend**: Python 3.9+, Flask, Flask-JWT-Extended, Werkzeug, python-dotenv. The data access layer is built directly on the native `sqlite3` module without an ORM.
+-   **Frontend**: Vue 3, TypeScript, Vite, Pinia, Axios, Chart.js
+-   **Database**: SQLite (for development and testing)
+-   **Testing**: Pytest, Pytest-Mock, Pytest-Cov (Backend); Vitest, Playwright (Frontend)
+
+## Project Structure
+
+```
+/
+├── app/                  # Core Flask application
+│   ├── auth/             # Authentication and authorization
+│   ├── admin/            # Admin CRUD functionalities
+│   ├── analysis/         # Data analysis endpoints
+│   ├── student/          # Student-specific endpoints
+│   ├── models/           # Data model definitions
+│   ├── repositories/     # Data access layer (Repository Pattern)
+│   └── utils/            # App-specific utilities (e.g., decorators)
+├── frontend/vue-project/ # Vue.js frontend application
+├── tests/                # Backend Pytest test suite
+├── utils/                # Project-level utilities (e.g., seed_data.py)
+├── .venv/                # Python virtual environment
+├── app.py                # Flask application entry point
+├── config.py             # Environment-specific configurations
+├── manage.py             # Defines custom CLI commands (e.g., init-db)
+├── requirements.txt      # Backend Python dependencies
+└── package.json          # Frontend Node.js dependencies
+```
+
+## Local Development Setup
+
+### Prerequisites
+
+-   Python 3.9+
+-   Node.js 18+
+-   An IDE like PyCharm or VS Code is recommended.
+
+### 1. Clone the Repository
 
 ```bash
 git clone <your-repository-url>
-cd group-assessment-v3 # 根据你的实际项目目录名调整
+cd <your-project-directory>
 ```
 
-### 2. 后端设置
+### 2. Backend Setup
 
 ```bash
-# 1. 创建并激活 Python 虚拟环境
-# 如果 .venv 目录已存在，则直接激活
-python3 -m venv .venv
-
-# Windows PowerShell
+# 1. Create and activate a Python virtual environment
+python -m venv .venv
+# On Windows
 .\.venv\Scripts\activate
-
-# macOS / Linux
+# On macOS/Linux
 source .venv/bin/activate
 
-# 2. 安装后端依赖
+# 2. Install backend dependencies
 pip install -r requirements.txt
 
-# 3. 初始化数据库 (创建表并填充初始数据)
-# 这一步会删除旧的数据库文件（如果存在）并创建新的表结构，然后填充初始数据。
-# 请确保在项目根目录执行，且虚拟环境已激活。
-
-# 首先，设置 FLASK_APP 环境变量指向 manage.py
-# Windows PowerShell
+# 3. Set the FLASK_APP environment variable
+# On Windows PowerShell
 $env:FLASK_APP="manage.py"
-# macOS / Linux
+# On macOS/Linux
 export FLASK_APP=manage.py
 
-# 运行数据库初始化命令
-# 这将删除 data-dev.sqlite (如果存在)，并根据 seed_data.py 重新创建和填充数据。
-flask init-db 
+# 4. Initialize the database (creates tables and seeds initial data)
+# This will delete the old database file (if it exists) and create a fresh one.
+flask init-db
 ```
 
-### 3. 前端设置
+### 3. Frontend Setup
 
 ```bash
-# 1. 进入前端项目目录
+# 1. Navigate to the frontend directory
 cd frontend/vue-project
 
-# 2. 安装前端依赖
+# 2. Install frontend dependencies
 npm install
-
-# 3. (可选但推荐) 配置 API 代理
-# 为了在开发时解决跨域问题，请确保 frontend/vue-project/vite.config.ts 中有类似以下的代理设置：
-# server: {
-#   proxy: {
-#     '/api': {
-#       target: 'http://127.0.0.1:5000', # 你的 Flask 后端地址
-#       changeOrigin: true,
-#       rewrite: (path) => path.replace(/^\/api/, '/api'), // 确保路径重写正确
-#     }
-#   }
-# }
 ```
 
-## 运行项目
+*Note: The Vite development server is pre-configured with a proxy to the Flask backend to avoid CORS issues. No extra configuration is needed.*
 
-你需要同时运行前端和后端开发服务器。请打开两个独立的终端窗口。
+## Running the Project
 
-1.  **运行后端服务**:
-    *   确保你的 Python 虚拟环境已激活。
-    *   在项目根目录运行：
+You need to run the backend and frontend servers concurrently in two separate terminals.
+
+1.  **Run the Backend (Flask)**:
+    -   Ensure your Python virtual environment is activated.
+    -   From the project root directory, run:
         ```bash
-        # 首先，设置 FLASK_APP 环境变量指向 manage.py (如果之前未设置)
-        # Windows PowerShell
-        $env:FLASK_APP="manage.py"
-        # macOS / Linux
-        export FLASK_APP=manage.py
-
-        # 运行 Flask 应用 (使用 manage.py 的 run 命令)
         python manage.py run
         ```
-    *   后端服务将默认在 `http://127.0.0.1:5000` 启动。
+    -   The backend will start on `http://127.0.0.1:5000`.
 
-2.  **运行前端服务**:
-    *   打开一个新的终端。
-    *   进入 `frontend/vue-project` 目录。
-    *   运行：
+2.  **Run the Frontend (Vue)**:
+    -   Open a new terminal.
+    -   Navigate to the `frontend/vue-project` directory.
+    -   Run:
         ```bash
         npm run dev
         ```
-    *   前端开发服务器将启动，你可以在浏览器中打开提示的地址（通常是 `http://localhost:5173`）。
+    -   The frontend development server will start. Open the URL shown in the terminal (usually `http://localhost:5173`).
 
-## 运行测试
+## Running Tests
 
-*   **后端测试**:
+-   **Backend Tests**:
     ```bash
-    # 在项目根目录，确保虚拟环境已激活
-    pytest --cov=app # 运行所有后端测试并生成覆盖率报告
+    # From the project root, with the virtual environment activated
+    pytest --cov=app
     ```
 
-*   **前端测试**:
+-   **Frontend Tests**:
     ```bash
-    # 进入 frontend/vue-project 目录
-    npm run test:unit # 运行单元测试
-    npm run test:e2e # 运行端到端测试
+    # Navigate to the frontend/vue-project directory
+    npm run test:unit  # For unit tests
+    npm run test:e2e   # For end-to-end tests
     ```
-
-## 清理本地环境 (可选)
-
-你可以安全地删除以下自动生成的文件和目录，它们不会影响项目功能：
-
-*   `__pycache__/` (所有子目录)
-*   `.pytest_cache/`
-*   `data-dev.sqlite` / `data-test.sqlite` (如果你可以通过 `flask init-db` 重新生成数据库)
-*   `node_modules/` (前端依赖，可以通过 `npm install` 重新生成)
-*   `.venv/` (Python 虚拟环境，可以通过 `python3 -m venv .venv` 重新生成)
-*   `.idea/` (IDE 配置文件)
